@@ -21,6 +21,8 @@ import '../presentation/tenant/payments/screens/make_payment_screen.dart';
 import '../presentation/tenant/lease/screens/lease_detail_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
 import '../presentation/common/screens/notifications_screen.dart';
+import '../presentation/common/screens/conversations_screen.dart';
+import '../presentation/common/screens/messages_screen.dart';
 
 /// Router Provider
 /// 
@@ -105,24 +107,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PropertyListScreen(),
             routes: [
               GoRoute(
-                path: 'add',
-                builder: (context, state) => const PropertyFormScreen(),
-              ),
-              GoRoute(
                 path: ':id',
                 builder: (context, state) {
                   final id = int.parse(state.pathParameters['id']!);
                   return PropertyDetailScreen(propertyId: id);
                 },
-                routes: [
-                  GoRoute(
-                    path: 'edit',
-                    builder: (context, state) {
-                      final id = int.parse(state.pathParameters['id']!);
-                      return PropertyFormScreen(propertyId: id);
-                    },
-                  ),
-                ],
               ),
             ],
           ),
@@ -161,6 +150,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const NotificationsScreen(),
           ),
         ],
+      ),
+      
+      // Messages (shared across all roles)
+      GoRoute(
+        path: '/conversations',
+        builder: (context, state) => const ConversationsScreen(),
+      ),
+      GoRoute(
+        path: '/messages/:id',
+        builder: (context, state) => const MessagesScreen(),
       ),
       
       // Notifications (shared across all roles)

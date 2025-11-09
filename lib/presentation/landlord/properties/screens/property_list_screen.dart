@@ -43,14 +43,10 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
       body: propertiesAsync.when(
         data: (properties) {
           if (properties.isEmpty) {
-            return EmptyState(
+            return const EmptyState(
               message: 'No properties found',
-              subtitle: 'Add your first property to get started',
+              subtitle: 'Contact admin to add properties',
               icon: Icons.home_work_outlined,
-              actionLabel: 'Add Property',
-              onAction: () {
-                // TODO: Navigate to add property screen
-              },
             );
           }
 
@@ -82,11 +78,6 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
             ref.invalidate(propertiesProvider(filters));
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/landlord/properties/add'),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Property'),
       ),
     );
   }

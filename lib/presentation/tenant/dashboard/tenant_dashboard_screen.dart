@@ -19,6 +19,10 @@ class TenantDashboardScreen extends ConsumerWidget {
         title: const Text('Tenant Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.message_outlined),
+            onPressed: () => context.push('/conversations'),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.push('/tenant/notifications'),
           ),
@@ -123,7 +127,7 @@ class TenantDashboardScreen extends ConsumerWidget {
                 _buildQuickAction(context, 'Payment\nHistory', Icons.history, () => context.push('/tenant/history')),
                 _buildQuickAction(context, 'Lease\nDetails', Icons.description, () => context.push('/tenant/lease')),
                 _buildQuickAction(context, 'Maintenance\nRequest', Icons.build, () {}),
-                _buildQuickAction(context, 'Contact\nLandlord', Icons.message, () {}),
+                _buildQuickAction(context, 'Messages', Icons.message, () => context.push('/conversations')),
               ],
             ),
             const SizedBox(height: 24),

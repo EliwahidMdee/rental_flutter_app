@@ -55,13 +55,6 @@ class PropertyDetailScreen extends ConsumerWidget {
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    // TODO: Navigate to edit screen
-                    context.push('/landlord/properties/$propertyId/edit');
-                  },
-                ),
-                IconButton(
                   icon: const Icon(Icons.share),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -226,22 +219,22 @@ class PropertyDetailScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: CustomButton(
-                            text: 'Edit Property',
-                            icon: Icons.edit,
+                            text: 'View Tenants',
+                            icon: Icons.people,
                             onPressed: () {
-                              context.push('/landlord/properties/$propertyId/edit');
+                              context.push('/landlord/tenants');
                             },
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: CustomButton(
-                            text: 'View Tenants',
-                            icon: Icons.people,
+                            text: 'Contact',
+                            icon: Icons.message,
                             isOutlined: true,
                             onPressed: () {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Tenant list coming soon')),
+                                const SnackBar(content: Text('Message tenant feature coming soon')),
                               );
                             },
                           ),

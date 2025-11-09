@@ -19,10 +19,12 @@ class AdminDashboardScreen extends ConsumerWidget {
         title: const Text('Admin Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.message_outlined),
+            onPressed: () => context.push('/conversations'),
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Navigate to notifications
-            },
+            onPressed: () => context.push('/notifications'),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),

@@ -126,7 +126,7 @@ class TenantDashboardScreen extends ConsumerWidget {
               children: [
                 _buildQuickAction(context, 'Payment\nHistory', Icons.history, () => context.push('/tenant/history')),
                 _buildQuickAction(context, 'Lease\nDetails', Icons.description, () => context.push('/tenant/lease')),
-                _buildQuickAction(context, 'Maintenance\nRequest', Icons.build, () {}),
+                _buildQuickAction(context, 'Maintenance', Icons.build, () => context.push('/tenant/maintenance')),
                 _buildQuickAction(context, 'Messages', Icons.message, () => context.push('/conversations')),
               ],
             ),

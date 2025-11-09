@@ -85,11 +85,7 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.person_outline),
             title: const Text('Edit Profile'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit profile feature coming soon')),
-              );
-            },
+            onTap: () => context.push('/profile'),
           ),
           ListTile(
             leading: const Icon(Icons.lock_outline),

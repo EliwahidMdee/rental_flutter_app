@@ -19,10 +19,12 @@ import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
 import '../presentation/tenant/payments/screens/payment_history_screen.dart';
 import '../presentation/tenant/payments/screens/make_payment_screen.dart';
 import '../presentation/tenant/lease/screens/lease_detail_screen.dart';
+import '../presentation/tenant/maintenance/screens/maintenance_request_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
 import '../presentation/common/screens/notifications_screen.dart';
 import '../presentation/common/screens/conversations_screen.dart';
 import '../presentation/common/screens/messages_screen.dart';
+import '../presentation/common/screens/user_profile_screen.dart';
 
 /// Router Provider
 /// 
@@ -146,6 +148,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const LeaseDetailScreen(),
           ),
           GoRoute(
+            path: 'maintenance',
+            builder: (context, state) => const MaintenanceRequestScreen(),
+          ),
+          GoRoute(
             path: 'notifications',
             builder: (context, state) => const NotificationsScreen(),
           ),
@@ -172,6 +178,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      
+      // Profile (shared across all roles)
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const UserProfileScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

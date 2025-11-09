@@ -14,7 +14,7 @@ import '../presentation/admin/reports/admin_reports_screen.dart';
 import '../presentation/landlord/dashboard/landlord_dashboard_screen.dart';
 import '../presentation/landlord/properties/screens/property_list_screen.dart';
 import '../presentation/landlord/properties/screens/property_detail_screen.dart';
-import '../presentation/landlord/properties/screens/property_form_screen.dart';
+import '../presentation/landlord/tenants/screens/tenant_list_screen.dart';
 import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
 import '../presentation/tenant/payments/screens/payment_history_screen.dart';
 import '../presentation/tenant/payments/screens/make_payment_screen.dart';
@@ -128,9 +128,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'tenants',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Tenants')),
-            ),
+            builder: (context, state) => const TenantListScreen(),
           ),
           GoRoute(
             path: 'payments',

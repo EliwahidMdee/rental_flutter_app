@@ -17,7 +17,9 @@ import '../presentation/landlord/properties/screens/property_form_screen.dart';
 import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
 import '../presentation/tenant/payments/screens/payment_history_screen.dart';
 import '../presentation/tenant/payments/screens/make_payment_screen.dart';
+import '../presentation/tenant/lease/screens/lease_detail_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
+import '../presentation/common/screens/notifications_screen.dart';
 
 /// Router Provider
 /// 
@@ -155,17 +157,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'lease',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Lease Details')),
-            ),
+            builder: (context, state) => const LeaseDetailScreen(),
           ),
           GoRoute(
             path: 'notifications',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Notifications')),
-            ),
+            builder: (context, state) => const NotificationsScreen(),
           ),
         ],
+      ),
+      
+      // Notifications (shared across all roles)
+      GoRoute(
+        path: '/notifications',
+        builder: (context, state) => const NotificationsScreen(),
       ),
       
       // Settings (shared across all roles)

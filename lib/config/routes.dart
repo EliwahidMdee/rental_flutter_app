@@ -26,6 +26,9 @@ import '../presentation/common/screens/notifications_screen.dart';
 import '../presentation/common/screens/conversations_screen.dart';
 import '../presentation/common/screens/messages_screen.dart';
 import '../presentation/common/screens/user_profile_screen.dart';
+import '../presentation/common/screens/help_support_screen.dart';
+import '../presentation/common/screens/terms_conditions_screen.dart';
+import '../presentation/common/screens/privacy_policy_screen.dart';
 
 /// Router Provider
 /// 
@@ -189,6 +192,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         builder: (context, state) => const UserProfileScreen(),
+      ),
+      
+      // Help & Support
+      GoRoute(
+        path: '/help',
+        builder: (context, state) => const HelpSupportScreen(),
+      ),
+      
+      // Terms & Conditions
+      GoRoute(
+        path: '/terms',
+        builder: (context, state) => const TermsConditionsScreen(),
+      ),
+      
+      // Privacy Policy
+      GoRoute(
+        path: '/privacy',
+        builder: (context, state) => const PrivacyPolicyScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

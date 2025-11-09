@@ -181,19 +181,19 @@ class SettingsScreen extends ConsumerWidget {
             leading: const Icon(Icons.description_outlined),
             title: const Text('Terms of Service'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () => context.push('/terms'),
           ),
           ListTile(
             leading: const Icon(Icons.privacy_tip_outlined),
             title: const Text('Privacy Policy'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () => context.push('/privacy'),
           ),
           ListTile(
             leading: const Icon(Icons.help_outline),
             title: const Text('Help & Support'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () => context.push('/help'),
           ),
 
           // Logout

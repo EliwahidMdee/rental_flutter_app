@@ -9,11 +9,14 @@ import '../presentation/auth/screens/splash_screen.dart';
 import '../presentation/auth/providers/auth_provider.dart';
 
 import '../presentation/admin/dashboard/admin_dashboard_screen.dart';
+import '../presentation/admin/payments/payment_approval_screen.dart';
 import '../presentation/landlord/dashboard/landlord_dashboard_screen.dart';
 import '../presentation/landlord/properties/screens/property_list_screen.dart';
 import '../presentation/landlord/properties/screens/property_detail_screen.dart';
+import '../presentation/landlord/properties/screens/property_form_screen.dart';
 import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
 import '../presentation/tenant/payments/screens/payment_history_screen.dart';
+import '../presentation/tenant/payments/screens/make_payment_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
 
 /// Router Provider
@@ -80,9 +83,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'payments',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Payment Approvals')),
-            ),
+            builder: (context, state) => const PaymentApprovalScreen(),
           ),
           GoRoute(
             path: 'management',
@@ -103,11 +104,24 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const PropertyListScreen(),
             routes: [
               GoRoute(
+                path: 'add',
+                builder: (context, state) => const PropertyFormScreen(),
+              ),
+              GoRoute(
                 path: ':id',
                 builder: (context, state) {
                   final id = int.parse(state.pathParameters['id']!);
                   return PropertyDetailScreen(propertyId: id);
                 },
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    builder: (context, state) {
+                      final id = int.parse(state.pathParameters['id']!);
+                      return PropertyFormScreen(propertyId: id);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -133,9 +147,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'payment',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Make Payment')),
-            ),
+            builder: (context, state) => const MakePaymentScreen(),
           ),
           GoRoute(
             path: 'history',

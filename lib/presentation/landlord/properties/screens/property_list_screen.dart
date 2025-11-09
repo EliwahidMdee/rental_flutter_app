@@ -67,9 +67,7 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: PropertyCard(
                     property: property,
-                    onTap: () {
-                      // TODO: Navigate to property detail
-                    },
+                    onTap: () => context.push('/landlord/properties/${property.id}'),
                     showStatus: true,
                   ),
                 );
@@ -86,12 +84,7 @@ class _PropertyListScreenState extends ConsumerState<PropertyListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navigate to add property screen
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Add property feature coming soon')),
-          );
-        },
+        onPressed: () => context.push('/landlord/properties/add'),
         icon: const Icon(Icons.add),
         label: const Text('Add Property'),
       ),

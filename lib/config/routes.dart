@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../presentation/auth/screens/login_screen.dart';
+import '../presentation/auth/screens/register_screen.dart';
+import '../presentation/auth/screens/forgot_password_screen.dart';
 import '../presentation/auth/screens/splash_screen.dart';
 import '../presentation/auth/providers/auth_provider.dart';
 
 import '../presentation/admin/dashboard/admin_dashboard_screen.dart';
 import '../presentation/landlord/dashboard/landlord_dashboard_screen.dart';
 import '../presentation/landlord/properties/screens/property_list_screen.dart';
+import '../presentation/landlord/properties/screens/property_detail_screen.dart';
 import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
 import '../presentation/tenant/payments/screens/payment_history_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
@@ -55,6 +58,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
+      ),
       
       // Admin Routes
       GoRoute(
@@ -90,6 +101,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'properties',
             builder: (context, state) => const PropertyListScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                builder: (context, state) {
+                  final id = int.parse(state.pathParameters['id']!);
+                  return PropertyDetailScreen(propertyId: id);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: 'tenants',

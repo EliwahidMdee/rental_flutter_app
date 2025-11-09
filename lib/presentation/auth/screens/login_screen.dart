@@ -155,9 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Implement forgot password
-                      },
+                      onPressed: () => context.push('/forgot-password'),
                       child: const Text('Forgot Password?'),
                     ),
                   ),
@@ -222,14 +220,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       const Text("Don't have an account? "),
                       TextButton(
-                        onPressed: () {
-                          // TODO: Navigate to register screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Registration coming soon'),
-                            ),
-                          );
-                        },
+                        onPressed: () => context.push('/register'),
                         child: const Text('Register'),
                       ),
                     ],

@@ -53,6 +53,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      final googleUser = await GoogleSignInService.signIn();
+      
+      if (googleUser == null) {
+        // User canceled
+        return;
+      }
+
+      if (!mounted) return;
+
+      // TODO: Send Google token to backend for verification
+      // For now, just show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Signed in as ${googleUser['email']}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // TODO: Complete login flow with backend
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-in failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);

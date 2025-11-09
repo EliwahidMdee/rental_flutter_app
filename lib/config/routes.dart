@@ -10,6 +10,7 @@ import '../presentation/auth/providers/auth_provider.dart';
 
 import '../presentation/admin/dashboard/admin_dashboard_screen.dart';
 import '../presentation/admin/payments/payment_approval_screen.dart';
+import '../presentation/admin/reports/admin_reports_screen.dart';
 import '../presentation/landlord/dashboard/landlord_dashboard_screen.dart';
 import '../presentation/landlord/properties/screens/property_list_screen.dart';
 import '../presentation/landlord/properties/screens/property_detail_screen.dart';
@@ -79,9 +80,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'reports',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Admin Reports')),
-            ),
+            builder: (context, state) => const AdminReportsScreen(),
           ),
           GoRoute(
             path: 'payments',

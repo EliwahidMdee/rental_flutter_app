@@ -1,0 +1,3401 @@
+# Comprehensive Flutter App Development Guide
+## Production-Ready Rental Management Mobile App (Tenant & Landlord Roles)
+
+---
+
+## 📑 Table of Contents
+
+1. [Introduction](#1-introduction)
+2. [Architecture Overview](#2-architecture-overview)
+3. [Prerequisites & Environment Setup](#3-prerequisites--environment-setup)
+4. [Project Setup](#4-project-setup)
+5. [Backend Integration Options](#5-backend-integration-options)
+6. [Authentication System](#6-authentication-system)
+7. [Role Management](#7-role-management)
+8. [State Management with Riverpod](#8-state-management-with-riverpod)
+9. [Offline-First Architecture](#9-offline-first-architecture)
+10. [Push Notifications](#10-push-notifications)
+11. [Theme System](#11-theme-system)
+12. [Payment Integration](#12-payment-integration)
+13. [UI/UX Guidelines](#13-uiux-guidelines)
+14. [Accessibility](#14-accessibility)
+15. [Testing Strategy](#15-testing-strategy)
+16. [Performance Optimization](#16-performance-optimization)
+17. [Security Best Practices](#17-security-best-practices)
+18. [Deployment](#18-deployment)
+19. [Example Tasks](#19-example-tasks)
+
+---
+
+## 1. Introduction
+
+### 1.1 Overview
+
+This comprehensive guide provides a complete roadmap for building a production-ready Flutter mobile application for rental management. The app supports two primary user roles: **Tenant** and **Landlord**, with the ability for a single user to have both roles simultaneously.
+
+### 1.2 Key Features
+
+**Core Features:**
+- ✅ Dual-role system (Tenant & Landlord)
+- ✅ Multiple authentication methods (Email/Password, Phone OTP, Google Sign-in, Biometric)
+- ✅ Offline-first with automatic sync
+- ✅ Push notifications with in-app notification center
+- ✅ Light/Dark theme with system preference support
+- ✅ Payment preparation (ready for integration)
+- ✅ Clean architecture with Riverpod state management
+- ✅ Comprehensive testing coverage
+- ✅ Accessibility compliant
+
+**Tenant Features:**
+- Browse and search properties with filters
+- Property details with image gallery
+- Favorite/save properties
+- Apply for leases
+- Pay rent (prepared for payment provider)
+- View lease contracts and documents
+- In-app messaging with landlords
+- Payment history and receipts
+- Notifications center
+
+**Landlord Features:**
+- Dashboard with occupancy rates and metrics
+- CRUD operations for properties
+- Photo upload for properties
+- View and manage tenant applications
+- Approve/reject lease requests
+- Tenant list and lease management
+- Income summary with basic charts
+- Receive messages from tenants
+- Notifications center
+
+**Shared Features:**
+- Settings (theme, biometric, language)
+- Security settings (password change, 2FA)
+- Help & Support (contact, FAQs)
+- Profile management
+- Logout with session invalidation
+
+### 1.3 Technology Stack
+
+**Recommended Stack:**
+
+```yaml
+# Core
+flutter: ^3.16.0
+dart: ^3.2.0
+
+# State Management
+flutter_riverpod: ^2.4.9
+
+# Routing
+go_router: ^13.0.0
+
+# Local Storage
+hive: ^2.2.3
+hive_flutter: ^1.1.0
+flutter_secure_storage: ^9.0.0
+
+# Backend Integration
+dio: ^5.4.0
+
+# Firebase (Optional)
+firebase_core: ^2.24.2
+firebase_auth: ^4.15.3
+cloud_firestore: ^4.13.6
+firebase_messaging: ^14.7.9
+
+# Authentication
+local_auth: ^2.1.8
+google_sign_in: ^6.1.6
+
+# Forms & Validation
+flutter_form_builder: ^9.1.1
+form_builder_validators: ^9.1.0
+
+# UI Components
+cached_network_image: ^3.3.0
+image_picker: ^1.0.5
+fl_chart: ^0.65.0
+
+# Utilities
+intl: ^0.18.1
+logger: ^2.0.2+1
+connectivity_plus: ^5.0.2
+
+# Background Tasks
+workmanager: ^0.5.1
+
+# Dev Dependencies
+build_runner: ^2.4.7
+json_serializable: ^6.7.1
+flutter_lints: ^3.0.1
+```
+
+---
+
+## 2. Architecture Overview
+
+### 2.1 Clean Architecture
+
+The app follows Clean Architecture principles with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────┐
+│            PRESENTATION LAYER                        │
+│  ┌────────────────────────────────────────────────┐ │
+│  │  Screens │ Widgets │ State (Riverpod Providers)│ │
+│  └────────────────────────────────────────────────┘ │
+└──────────────────────┬──────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────┐
+│            DOMAIN LAYER                              │
+│  ┌────────────────────────────────────────────────┐ │
+│  │  Entities │ Use Cases │ Repository Interfaces  │ │
+│  └────────────────────────────────────────────────┘ │
+└──────────────────────┬──────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────┐
+│            DATA LAYER                                │
+│  ┌────────────────────────────────────────────────┐ │
+│  │  Models │ Repositories │ Data Sources           │ │
+│  │  (Remote: API/Firebase │ Local: Hive/SQLite)   │ │
+│  └────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────┘
+```
+
+### 2.2 Project Structure
+
+```
+/lib
+  /src
+    /core
+      /constants          # App constants, strings
+      /utils             # Utility functions, helpers
+      /errors            # Error classes, exceptions
+      /network           # API client, interceptors
+      /theme             # Theme configurations
+    /data
+      /models            # Data models (JSON serializable)
+      /repositories      # Repository implementations
+      /datasources
+        /remote          # API data sources
+        /local           # Local storage data sources
+    /domain
+      /entities          # Business entities
+      /repositories      # Repository interfaces
+      /usecases          # Business logic use cases
+    /presentation
+      /routes            # GoRouter configuration
+      /screens
+        /auth            # Auth screens
+        /tenant          # Tenant role screens
+        /landlord        # Landlord role screens
+        /shared          # Shared screens
+      /widgets
+        /common          # Reusable widgets
+        /tenant          # Tenant-specific widgets
+        /landlord        # Landlord-specific widgets
+      /providers         # Riverpod providers
+    /services
+      /auth              # Authentication service
+      /notification      # Push notification service
+      /biometric         # Biometric auth service
+      /payment           # Payment service
+      /sync              # Offline sync service
+  main.dart
+```
+
+---
+
+## 3. Prerequisites & Environment Setup
+
+### 3.1 Required Software
+
+1. **Flutter SDK** (3.16.0+)
+```bash
+# Download from https://docs.flutter.dev/get-started/install
+# Verify installation
+flutter doctor
+```
+
+2. **IDE** (Choose one)
+- Android Studio (recommended)
+- VS Code with Flutter extension
+
+3. **Platform SDKs**
+- **Android:** Android SDK (API 21-34)
+- **iOS:** Xcode 14+ (macOS only)
+
+4. **Additional Tools**
+```bash
+# Firebase CLI (if using Firebase)
+npm install -g firebase-tools
+
+# Flutter tools
+flutter pub global activate fvm
+flutter pub global activate flutter_launcher_icons
+```
+
+### 3.2 Verify Setup
+
+```bash
+flutter doctor -v
+flutter --version
+dart --version
+```
+
+Ensure all checks pass before proceeding.
+
+---
+
+## 4. Project Setup
+
+### 4.1 Create New Project
+
+```bash
+# Create new Flutter project
+flutter create --org com.yourcompany rental_management_app
+cd rental_management_app
+
+# Remove default files
+rm lib/main.dart
+rm -rf test/
+```
+
+### 4.2 Configure pubspec.yaml
+
+```yaml
+name: rental_management_app
+description: Production-ready rental management mobile app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Routing
+  go_router: ^13.0.0
+  
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  
+  # Networking
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  
+  # Firebase (Optional - uncomment if using Firebase)
+  # firebase_core: ^2.24.2
+  # firebase_auth: ^4.15.3
+  # cloud_firestore: ^4.13.6
+  # firebase_messaging: ^14.7.9
+  # firebase_storage: ^11.5.6
+  
+  # Authentication
+  local_auth: ^2.1.8
+  google_sign_in: ^6.1.6
+  
+  # Forms & Validation
+  flutter_form_builder: ^9.1.1
+  form_builder_validators: ^9.1.0
+  
+  # UI Components
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.5
+  fl_chart: ^0.65.0
+  shimmer: ^3.0.0
+  pull_to_refresh: ^2.0.0
+  
+  # Utilities
+  intl: ^0.18.1
+  logger: ^2.0.2+1
+  equatable: ^2.0.5
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  
+  # Background Tasks
+  workmanager: ^0.5.1
+  
+  # Icons & Fonts
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+  freezed: ^2.4.6
+  
+  # Linting
+  flutter_lints: ^3.0.1
+  
+  # Testing
+  mockito: ^5.4.4
+  integration_test:
+    sdk: flutter
+  
+  # Assets
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+  
+  fonts:
+    - family: CustomFont
+      fonts:
+        - asset: assets/fonts/custom_font.ttf
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+```
+
+### 4.3 Install Dependencies
+
+```bash
+flutter pub get
+```
+
+### 4.4 Create Folder Structure
+
+```bash
+# Create directory structure
+mkdir -p lib/src/{core/{constants,utils,errors,network,theme},data/{models,repositories,datasources/{remote,local}},domain/{entities,repositories,usecases},presentation/{routes,screens/{auth,tenant,landlord,shared},widgets/{common,tenant,landlord},providers},services/{auth,notification,biometric,payment,sync}}
+
+# Create assets directories
+mkdir -p assets/{images,icons,fonts}
+```
+
+---
+
+## 5. Backend Integration Options
+
+### 5.1 Option A: Firebase Backend
+
+**Advantages:**
+- Quick setup, no server management
+- Real-time data sync
+- Built-in authentication
+- Scalable infrastructure
+
+**Setup:**
+
+1. **Create Firebase Project**
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Initialize Firebase
+firebase init
+```
+
+2. **Configure Firebase in Flutter**
+
+```dart
+// lib/src/core/firebase_config.dart
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+class FirebaseConfig {
+  static Future<void> initialize() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+}
+```
+
+3. **Firestore Data Models**
+
+```dart
+// User collection structure
+{
+  "id": "uid-123",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "phone": "+255712345678",
+  "roles": ["tenant", "landlord"],  // User can have both roles
+  "avatarUrl": "https://...",
+  "properties": ["propId1"],         // For landlords
+  "favouriteProperties": ["propId2"], // For tenants
+  "createdAt": Timestamp,
+  "updatedAt": Timestamp
+}
+
+// Property collection structure
+{
+  "id": "propId1",
+  "ownerId": "uid-456",
+  "title": "2BR Apartment in Masaki",
+  "description": "Modern apartment...",
+  "address": {
+    "street": "123 Main St",
+    "city": "Dar es Salaam",
+    "region": "Kinondoni",
+    "country": "Tanzania"
+  },
+  "rent": 250,
+  "currency": "USD",
+  "images": ["url1", "url2"],
+  "available": true,
+  "amenities": ["parking", "wifi"],
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "createdAt": Timestamp
+}
+
+// Lease collection structure
+{
+  "id": "leaseId1",
+  "propertyId": "propId1",
+  "tenantId": "uid-123",
+  "landlordId": "uid-456",
+  "startDate": Timestamp,
+  "endDate": Timestamp,
+  "monthlyRent": 250,
+  "status": "active",  // pending, active, terminated
+  "createdAt": Timestamp
+}
+
+// Notification collection structure
+{
+  "id": "notifId1",
+  "userId": "uid-123",
+  "title": "Rent Due",
+  "body": "Your rent is due on Dec 1",
+  "type": "rent_reminder",
+  "read": false,
+  "data": {"leaseId": "leaseId1"},
+  "createdAt": Timestamp
+}
+```
+
+4. **Firebase Security Rules**
+
+```javascript
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User profiles - users can read/write their own
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
+    }
+    
+    // Properties - landlords can create/edit their own
+    match /properties/{propertyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                       'landlord' in request.auth.token.roles;
+      allow update, delete: if request.auth != null && 
+                              resource.data.ownerId == request.auth.uid;
+    }
+    
+    // Leases - tenants and landlords can read their own
+    match /leases/{leaseId} {
+      allow read: if request.auth != null && 
+                     (resource.data.tenantId == request.auth.uid || 
+                      resource.data.landlordId == request.auth.uid);
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+                       (resource.data.tenantId == request.auth.uid || 
+                        resource.data.landlordId == request.auth.uid);
+    }
+    
+    // Notifications - users can read their own
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && 
+                     resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null;
+    }
+  }
+}
+```
+
+### 5.2 Option B: Laravel REST API
+
+**Advantages:**
+- Full control over backend logic
+- Existing Laravel infrastructure
+- Custom business rules
+- SQL database
+
+**API Endpoints:**
+
+```
+# Authentication
+POST   /api/auth/register         # Register new user
+POST   /api/auth/login            # Login with email/password
+POST   /api/auth/otp/send         # Send OTP to phone
+POST   /api/auth/otp/verify       # Verify OTP code
+POST   /api/auth/google           # Google Sign-in
+POST   /api/auth/logout           # Logout
+POST   /api/auth/refresh          # Refresh token
+
+# Users
+GET    /api/users/me              # Get current user
+PUT    /api/users/me              # Update current user
+POST   /api/users/me/avatar       # Upload avatar
+DELETE /api/users/me/avatar       # Delete avatar
+
+# Properties
+GET    /api/properties            # List properties (with filters)
+GET    /api/properties/{id}       # Get property details
+POST   /api/properties            # Create property (landlord)
+PUT    /api/properties/{id}       # Update property (landlord)
+DELETE /api/properties/{id}       # Delete property (landlord)
+POST   /api/properties/{id}/images # Upload property images
+
+# Leases
+GET    /api/leases                # List user's leases
+GET    /api/leases/{id}           # Get lease details
+POST   /api/leases                # Create lease application
+PUT    /api/leases/{id}           # Update lease
+DELETE /api/leases/{id}           # Cancel lease
+
+# Payments
+GET    /api/payments              # List payments
+GET    /api/payments/{id}         # Get payment details
+POST   /api/payments              # Record payment
+POST   /api/payments/webhook      # Payment provider webhook
+
+# Notifications
+GET    /api/notifications         # List notifications
+GET    /api/notifications/{id}    # Get notification details
+PUT    /api/notifications/{id}/read # Mark as read
+DELETE /api/notifications/{id}    # Delete notification
+
+# Messages
+GET    /api/messages              # List conversations
+GET    /api/messages/{id}         # Get messages in conversation
+POST   /api/messages              # Send message
+```
+
+**API Client Implementation:**
+
+```dart
+// lib/src/core/network/api_client.dart
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:logger/logger.dart';
+
+class ApiClient {
+  final Dio _dio;
+  final FlutterSecureStorage _secureStorage;
+  final Logger _logger;
+  
+  static const String baseUrl = 'https://api.yourapp.com/api';
+  
+  ApiClient({
+    required Dio dio,
+    required FlutterSecureStorage secureStorage,
+    required Logger logger,
+  })  : _dio = dio,
+        _secureStorage = secureStorage,
+        _logger = logger {
+    _setupInterceptors();
+  }
+  
+  void _setupInterceptors() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          // Add auth token to requests
+          final token = await _secureStorage.read(key: 'auth_token');
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          
+          _logger.d('REQUEST[${options.method}] => ${options.path}');
+          _logger.d('Headers: ${options.headers}');
+          _logger.d('Data: ${options.data}');
+          
+          return handler.next(options);
+        },
+        onResponse: (response, handler) {
+          _logger.d(
+            'RESPONSE[${response.statusCode}] => ${response.requestOptions.path}',
+          );
+          return handler.next(response);
+        },
+        onError: (error, handler) {
+          _logger.e(
+            'ERROR[${error.response?.statusCode}] => ${error.requestOptions.path}',
+          );
+          _logger.e('Error message: ${error.message}');
+          
+          // Handle token expiration
+          if (error.response?.statusCode == 401) {
+            // Trigger logout or token refresh
+          }
+          
+          return handler.next(error);
+        },
+      ),
+    );
+  }
+  
+  // GET request
+  Future<Response> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.get(
+      '$baseUrl$path',
+      queryParameters: queryParameters,
+    );
+  }
+  
+  // POST request
+  Future<Response> post(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    return await _dio.post(
+      '$baseUrl$path',
+      data: data,
+      queryParameters: queryParameters,
+    );
+  }
+  
+  // PUT request
+  Future<Response> put(
+    String path, {
+    dynamic data,
+  }) async {
+    return await _dio.put(
+      '$baseUrl$path',
+      data: data,
+    );
+  }
+  
+  // DELETE request
+  Future<Response> delete(String path) async {
+    return await _dio.delete('$baseUrl$path');
+  }
+  
+  // Upload file
+  Future<Response> uploadFile(
+    String path,
+    String filePath, {
+    String fieldName = 'file',
+    Map<String, dynamic>? additionalData,
+  }) async {
+    final formData = FormData.fromMap({
+      fieldName: await MultipartFile.fromFile(filePath),
+      ...?additionalData,
+    });
+    
+    return await _dio.post(
+      '$baseUrl$path',
+      data: formData,
+      options: Options(
+        headers: {'Content-Type': 'multipart/form-data'},
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 6. Authentication System
+
+### 6.1 Multiple Authentication Methods
+
+#### 6.1.1 Email/Password Authentication
+
+```dart
+// lib/src/data/repositories/auth_repository.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+class AuthRepository {
+  final ApiClient _apiClient;
+  final FlutterSecureStorage _secureStorage;
+  
+  AuthRepository({
+    required ApiClient apiClient,
+    required FlutterSecureStorage secureStorage,
+  })  : _apiClient = apiClient,
+        _secureStorage = secureStorage;
+  
+  // Login with email/password
+  Future<User> loginWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/login',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+      
+      final token = response.data['token'];
+      final user = User.fromJson(response.data['user']);
+      
+      // Store token securely
+      await _secureStorage.write(key: 'auth_token', value: token);
+      await _secureStorage.write(key: 'user_id', value: user.id);
+      
+      return user;
+    } catch (e) {
+      throw AuthException('Login failed: ${e.toString()}');
+    }
+  }
+  
+  // Register new user
+  Future<User> register({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required List<String> roles,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/register',
+        data: {
+          'email': email,
+          'password': password,
+          'name': name,
+          'phone': phone,
+          'roles': roles,
+        },
+      );
+      
+      final token = response.data['token'];
+      final user = User.fromJson(response.data['user']);
+      
+      await _secureStorage.write(key: 'auth_token', value: token);
+      await _secureStorage.write(key: 'user_id', value: user.id);
+      
+      return user;
+    } catch (e) {
+      throw AuthException('Registration failed: ${e.toString()}');
+    }
+  }
+  
+  // Logout
+  Future<void> logout() async {
+    try {
+      await _apiClient.post('/auth/logout');
+    } finally {
+      await _secureStorage.deleteAll();
+    }
+  }
+}
+```
+
+#### 6.1.2 Phone OTP Authentication
+
+```dart
+// lib/src/services/auth/otp_service.dart
+class OtpService {
+  final ApiClient _apiClient;
+  
+  OtpService(this._apiClient);
+  
+  // Send OTP to phone number
+  Future<void> sendOtp(String phoneNumber) async {
+    try {
+      await _apiClient.post(
+        '/auth/otp/send',
+        data: {'phone': phoneNumber},
+      );
+    } catch (e) {
+      throw OtpException('Failed to send OTP: ${e.toString()}');
+    }
+  }
+  
+  // Verify OTP code
+  Future<User> verifyOtp({
+    required String phoneNumber,
+    required String code,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        '/auth/otp/verify',
+        data: {
+          'phone': phoneNumber,
+          'code': code,
+        },
+      );
+      
+      return User.fromJson(response.data['user']);
+    } catch (e) {
+      throw OtpException('OTP verification failed: ${e.toString()}');
+    }
+  }
+}
+```
+
+#### 6.1.3 Google Sign-In
+
+```dart
+// lib/src/services/auth/google_auth_service.dart
+import 'package:google_sign_in/google_sign_in.dart';
+
+class GoogleAuthService {
+  final GoogleSignIn _googleSignIn;
+  final ApiClient _apiClient;
+  
+  GoogleAuthService({
+    required GoogleSignIn googleSignIn,
+    required ApiClient apiClient,
+  })  : _googleSignIn = googleSignIn,
+        _apiClient = apiClient;
+  
+  // Sign in with Google
+  Future<User> signInWithGoogle() async {
+    try {
+      // Trigger Google Sign-In flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        throw AuthException('Google sign-in cancelled');
+      }
+      
+      // Get authentication details
+      final GoogleSignInAuthentication googleAuth = 
+          await googleUser.authentication;
+      
+      // Send token to backend for verification
+      final response = await _apiClient.post(
+        '/auth/google',
+        data: {
+          'idToken': googleAuth.idToken,
+          'accessToken': googleAuth.accessToken,
+        },
+      );
+      
+      return User.fromJson(response.data['user']);
+    } catch (e) {
+      throw AuthException('Google sign-in failed: ${e.toString()}');
+    }
+  }
+  
+  // Sign out from Google
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+  }
+}
+```
+
+#### 6.1.4 Biometric Authentication
+
+```dart
+// lib/src/services/biometric/biometric_service.dart
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter/services.dart';
+
+class BiometricService {
+  final LocalAuthentication _localAuth;
+  
+  BiometricService(this._localAuth);
+  
+  // Check if device supports biometric
+  Future<bool> canCheckBiometric() async {
+    try {
+      return await _localAuth.canCheckBiometrics;
+    } on PlatformException {
+      return false;
+    }
+  }
+  
+  // Get available biometric types
+  Future<List<BiometricType>> getAvailableBiometrics() async {
+    try {
+      return await _localAuth.getAvailableBiometrics();
+    } on PlatformException {
+      return [];
+    }
+  }
+  
+  // Authenticate with biometric
+  Future<bool> authenticate({
+    required String reason,
+  }) async {
+    try {
+      return await _localAuth.authenticate(
+        localizedReason: reason,
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: true,
+        ),
+      );
+    } on PlatformException catch (e) {
+      print('Biometric authentication error: $e');
+      return false;
+    }
+  }
+  
+  // Check if biometric is enabled for user
+  Future<bool> isBiometricEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('biometric_enabled') ?? false;
+  }
+  
+  // Enable/disable biometric
+  Future<void> setBiometricEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('biometric_enabled', enabled);
+  }
+}
+```
+
+**Biometric Login Screen:**
+
+```dart
+// lib/src/presentation/screens/auth/biometric_login_screen.dart
+class BiometricLoginScreen extends ConsumerWidget {
+  const BiometricLoginScreen({Key? key}) : super(key: key);
+  
+  Future<void> _authenticateWithBiometric(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final biometricService = ref.read(biometricServiceProvider);
+    
+    final isAuthenticated = await biometricService.authenticate(
+      reason: 'Authenticate to access your account',
+    );
+    
+    if (isAuthenticated) {
+      // Navigate to home screen
+      context.go('/home');
+    } else {
+      // Show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Authentication failed'),
+        ),
+      );
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.fingerprint,
+              size: 100,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              'Use Biometric to Login',
+              style: TextStyle(fontSize: 24),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => _authenticateWithBiometric(context, ref),
+              child: const Text('Authenticate'),
+            ),
+            TextButton(
+              onPressed: () => context.go('/login'),
+              child: const Text('Use Email/Password'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 7. Role Management
+
+### 7.1 User Entity with Roles
+
+```dart
+// lib/src/domain/entities/user.dart
+import 'package:equatable/equatable.dart';
+
+class User extends Equatable {
+  final String id;
+  final String email;
+  final String name;
+  final String phone;
+  final List<String> roles;  // Can be ['tenant'], ['landlord'], or both
+  final String? avatarUrl;
+  final List<String> properties;  // For landlords
+  final List<String> favouriteProperties;  // For tenants
+  final DateTime createdAt;
+  
+  const User({
+    required this.id,
+    required this.email,
+    required this.name,
+    required this.phone,
+    required this.roles,
+    this.avatarUrl,
+    this.properties = const [],
+    this.favouriteProperties = const [],
+    required this.createdAt,
+  });
+  
+  bool get isTenant => roles.contains('tenant');
+  bool get isLandlord => roles.contains('landlord');
+  bool get hasBothRoles => isTenant && isLandlord;
+  
+  @override
+  List<Object?> get props => [
+        id,
+        email,
+        name,
+        phone,
+        roles,
+        avatarUrl,
+        properties,
+        favouriteProperties,
+        createdAt,
+      ];
+}
+```
+
+### 7.2 Role-Based UI
+
+```dart
+// lib/src/presentation/screens/home/home_screen.dart
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    
+    return user.when(
+      data: (user) {
+        if (user == null) {
+          return const LoginScreen();
+        }
+        
+        // User has both roles - show role selector
+        if (user.hasBothRoles) {
+          return const RoleSelectorScreen();
+        }
+        
+        // Show appropriate dashboard based on role
+        if (user.isTenant) {
+          return const TenantDashboard();
+        }
+        
+        if (user.isLandlord) {
+          return const LandlordDashboard();
+        }
+        
+        return const ErrorScreen(message: 'No valid role assigned');
+      },
+      loading: () => const LoadingScreen(),
+      error: (error, stack) => ErrorScreen(message: error.toString()),
+    );
+  }
+}
+```
+
+### 7.3 Role Selector (for users with both roles)
+
+```dart
+// lib/src/presentation/screens/home/role_selector_screen.dart
+class RoleSelectorScreen extends ConsumerWidget {
+  const RoleSelectorScreen({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Role'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => context.push('/settings'),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'How would you like to proceed?',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 48),
+            RoleCard(
+              title: 'Continue as Tenant',
+              description: 'Browse properties, pay rent, manage leases',
+              icon: Icons.home,
+              color: Colors.purple,
+              onTap: () {
+                ref.read(selectedRoleProvider.notifier).state = 'tenant';
+                context.go('/tenant/dashboard');
+              },
+            ),
+            const SizedBox(height: 24),
+            RoleCard(
+              title: 'Continue as Landlord',
+              description: 'Manage properties, tenants, and income',
+              icon: Icons.business,
+              color: Colors.green,
+              onTap: () {
+                ref.read(selectedRoleProvider.notifier).state = 'landlord';
+                context.go('/landlord/dashboard');
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RoleCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  
+  const RoleCard({
+    Key? key,
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              Icon(icon, size: 64, color: color),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 8. State Management with Riverpod
+
+### 8.1 Provider Setup
+
+```dart
+// lib/src/presentation/providers/providers.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:logger/logger.dart';
+
+// Core providers
+final dioProvider = Provider<Dio>((ref) {
+  return Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 30),
+    receiveTimeout: const Duration(seconds: 30),
+  ));
+});
+
+final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
+  return const FlutterSecureStorage();
+});
+
+final loggerProvider = Provider<Logger>((ref) {
+  return Logger(
+    printer: PrettyPrinter(),
+  );
+});
+
+// API client provider
+final apiClientProvider = Provider<ApiClient>((ref) {
+  return ApiClient(
+    dio: ref.watch(dioProvider),
+    secureStorage: ref.watch(secureStorageProvider),
+    logger: ref.watch(loggerProvider),
+  );
+});
+
+// Repository providers
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(
+    apiClient: ref.watch(apiClientProvider),
+    secureStorage: ref.watch(secureStorageProvider),
+  );
+});
+
+final propertyRepositoryProvider = Provider<PropertyRepository>((ref) {
+  return PropertyRepository(
+    apiClient: ref.watch(apiClientProvider),
+  );
+});
+
+// Auth state provider
+final authStateProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
+  return AuthNotifier(
+    authRepository: ref.watch(authRepositoryProvider),
+  );
+});
+
+// Current user provider
+final currentUserProvider = Provider<AsyncValue<User?>>((ref) {
+  return ref.watch(authStateProvider);
+});
+
+// Selected role provider (for users with both roles)
+final selectedRoleProvider = StateProvider<String?>((ref) => null);
+```
+
+### 8.2 State Notifiers
+
+```dart
+// lib/src/presentation/providers/auth_notifier.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
+  final AuthRepository _authRepository;
+  
+  AuthNotifier({
+    required AuthRepository authRepository,
+  })  : _authRepository = authRepository,
+        super(const AsyncValue.loading()) {
+    _checkAuthStatus();
+  }
+  
+  // Check if user is already logged in
+  Future<void> _checkAuthStatus() async {
+    try {
+      final user = await _authRepository.getCurrentUser();
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+  
+  // Login
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await _authRepository.loginWithEmail(
+        email: email,
+        password: password,
+      );
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+  
+  // Register
+  Future<void> register({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required List<String> roles,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      final user = await _authRepository.register(
+        email: email,
+        password: password,
+        name: name,
+        phone: phone,
+        roles: roles,
+      );
+      state = AsyncValue.data(user);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+  
+  // Logout
+  Future<void> logout() async {
+    try {
+      await _authRepository.logout();
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+}
+```
+
+### 8.3 Properties Provider
+
+```dart
+// lib/src/presentation/providers/properties_provider.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+// Properties list provider
+final propertiesProvider = FutureProvider.family<List<Property>, PropertyFilters?>(
+  (ref, filters) async {
+    final repository = ref.watch(propertyRepositoryProvider);
+    return await repository.getProperties(filters: filters);
+  },
+);
+
+// Property detail provider
+final propertyDetailProvider = FutureProvider.family<Property, String>(
+  (ref, propertyId) async {
+    final repository = ref.watch(propertyRepositoryProvider);
+    return await repository.getPropertyById(propertyId);
+  },
+);
+
+// Favorite properties provider
+final favoritePropertiesProvider = StateNotifierProvider<FavoritePropertiesNotifier, List<String>>(
+  (ref) => FavoritePropertiesNotifier(),
+);
+
+class FavoritePropertiesNotifier extends StateNotifier<List<String>> {
+  FavoritePropertiesNotifier() : super([]);
+  
+  void toggleFavorite(String propertyId) {
+    if (state.contains(propertyId)) {
+      state = state.where((id) => id != propertyId).toList();
+    } else {
+      state = [...state, propertyId];
+    }
+  }
+  
+  bool isFavorite(String propertyId) {
+    return state.contains(propertyId);
+  }
+}
+```
+
+---
+
+## 9. Offline-First Architecture
+
+### 9.1 Local Storage Setup
+
+```dart
+// lib/src/data/datasources/local/hive_local_storage.dart
+import 'package:hive_flutter/hive_flutter.dart';
+
+class HiveLocalStorage {
+  static const String propertiesBox = 'properties';
+  static const String leasesBox = 'leases';
+  static const String notificationsBox = 'notifications';
+  
+  static Future<void> initialize() async {
+    await Hive.initFlutter();
+    
+    // Register adapters
+    Hive.registerAdapter(PropertyAdapter());
+    Hive.registerAdapter(LeaseAdapter());
+    Hive.registerAdapter(NotificationAdapter());
+    
+    // Open boxes
+    await Hive.openBox(propertiesBox);
+    await Hive.openBox(leasesBox);
+    await Hive.openBox(notificationsBox);
+  }
+  
+  // Get box
+  static Box getBox(String boxName) {
+    return Hive.box(boxName);
+  }
+  
+  // Clear all data
+  static Future<void> clearAll() async {
+    await Hive.box(propertiesBox).clear();
+    await Hive.box(leasesBox).clear();
+    await Hive.box(notificationsBox).clear();
+  }
+}
+```
+
+### 9.2 Cache Strategy
+
+```dart
+// lib/src/data/repositories/property_repository.dart
+class PropertyRepository {
+  final ApiClient _apiClient;
+  final Box _propertiesBox;
+  final ConnectivityService _connectivityService;
+  
+  PropertyRepository({
+    required ApiClient apiClient,
+    required Box propertiesBox,
+    required ConnectivityService connectivityService,
+  })  : _apiClient = apiClient,
+        _propertiesBox = propertiesBox,
+        _connectivityService = connectivityService;
+  
+  // Get properties with offline support
+  Future<List<Property>> getProperties({
+    PropertyFilters? filters,
+  }) async {
+    try {
+      // Check connectivity
+      final isOnline = await _connectivityService.isConnected();
+      
+      if (isOnline) {
+        // Fetch from API
+        final response = await _apiClient.get(
+          '/properties',
+          queryParameters: filters?.toJson(),
+        );
+        
+        final properties = (response.data['data'] as List)
+            .map((json) => Property.fromJson(json))
+            .toList();
+        
+        // Cache the results
+        await _cacheProperties(properties);
+        
+        return properties;
+      } else {
+        // Return cached data
+        return _getCachedProperties();
+      }
+    } catch (e) {
+      // Fallback to cache on error
+      return _getCachedProperties();
+    }
+  }
+  
+  // Cache properties
+  Future<void> _cacheProperties(List<Property> properties) async {
+    for (final property in properties) {
+      await _propertiesBox.put(property.id, property.toJson());
+    }
+  }
+  
+  // Get cached properties
+  List<Property> _getCachedProperties() {
+    return _propertiesBox.values
+        .map((json) => Property.fromJson(Map<String, dynamic>.from(json)))
+        .toList();
+  }
+}
+```
+
+### 9.3 Sync Service
+
+```dart
+// lib/src/services/sync/sync_service.dart
+class SyncService {
+  final ApiClient _apiClient;
+  final HiveLocalStorage _localStorage;
+  final ConnectivityService _connectivityService;
+  
+  SyncService({
+    required ApiClient apiClient,
+    required HiveLocalStorage localStorage,
+    required ConnectivityService connectivityService,
+  })  : _apiClient = apiClient,
+        _localStorage = localStorage,
+        _connectivityService = connectivityService;
+  
+  // Sync all data
+  Future<void> syncAll() async {
+    if (!await _connectivityService.isConnected()) {
+      return;
+    }
+    
+    await Future.wait([
+      _syncProperties(),
+      _syncLeases(),
+      _syncNotifications(),
+    ]);
+  }
+  
+  // Sync properties
+  Future<void> _syncProperties() async {
+    try {
+      final response = await _apiClient.get('/properties');
+      final properties = (response.data['data'] as List)
+          .map((json) => Property.fromJson(json))
+          .toList();
+      
+      final box = HiveLocalStorage.getBox(HiveLocalStorage.propertiesBox);
+      await box.clear();
+      
+      for (final property in properties) {
+        await box.put(property.id, property.toJson());
+      }
+    } catch (e) {
+      print('Failed to sync properties: $e');
+    }
+  }
+  
+  // Sync with queue for offline actions
+  Future<void> syncOfflineActions() async {
+    final actionsQueue = HiveLocalStorage.getBox('actions_queue');
+    
+    for (final key in actionsQueue.keys) {
+      final action = actionsQueue.get(key);
+      
+      try {
+        // Execute offline action
+        await _executeAction(action);
+        
+        // Remove from queue on success
+        await actionsQueue.delete(key);
+      } catch (e) {
+        print('Failed to sync action: $e');
+      }
+    }
+  }
+  
+  Future<void> _executeAction(Map<String, dynamic> action) async {
+    final type = action['type'];
+    final data = action['data'];
+    
+    switch (type) {
+      case 'favorite_property':
+        await _apiClient.post('/properties/${data['propertyId']}/favorite');
+        break;
+      case 'apply_lease':
+        await _apiClient.post('/leases', data: data);
+        break;
+      // Add more action types as needed
+    }
+  }
+}
+```
+
+### 9.4 Connectivity Service
+
+```dart
+// lib/src/services/connectivity/connectivity_service.dart
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+class ConnectivityService {
+  final Connectivity _connectivity;
+  
+  ConnectivityService(this._connectivity);
+  
+  // Check if connected
+  Future<bool> isConnected() async {
+    final result = await _connectivity.checkConnectivity();
+    return result != ConnectivityResult.none;
+  }
+  
+  // Stream connectivity changes
+  Stream<bool> get onConnectivityChanged {
+    return _connectivity.onConnectivityChanged.map(
+      (result) => result != ConnectivityResult.none,
+    );
+  }
+}
+
+// Provider
+final connectivityServiceProvider = Provider<ConnectivityService>((ref) {
+  return ConnectivityService(Connectivity());
+});
+
+final isOnlineProvider = StreamProvider<bool>((ref) {
+  final connectivityService = ref.watch(connectivityServiceProvider);
+  return connectivityService.onConnectivityChanged;
+});
+```
+
+### 9.5 Offline Indicator Widget
+
+```dart
+// lib/src/presentation/widgets/common/offline_indicator.dart
+class OfflineIndicator extends ConsumerWidget {
+  const OfflineIndicator({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOnline = ref.watch(isOnlineProvider);
+    
+    return isOnline.when(
+      data: (online) {
+        if (online) {
+          return const SizedBox.shrink();
+        }
+        
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          color: Colors.orange,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.cloud_off, size: 16, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                'You are offline',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+```
+
+---
+
+## 10. Push Notifications
+
+### 10.1 Firebase Cloud Messaging Setup
+
+```dart
+// lib/src/services/notification/fcm_service.dart
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+class FCMService {
+  final FirebaseMessaging _firebaseMessaging;
+  final FlutterLocalNotificationsPlugin _localNotifications;
+  
+  FCMService({
+    required FirebaseMessaging firebaseMessaging,
+    required FlutterLocalNotificationsPlugin localNotifications,
+  })  : _firebaseMessaging = firebaseMessaging,
+        _localNotifications = localNotifications;
+  
+  // Initialize FCM
+  Future<void> initialize() async {
+    // Request permission
+    await _requestPermission();
+    
+    // Get FCM token
+    final token = await _firebaseMessaging.getToken();
+    print('FCM Token: $token');
+    
+    // Send token to backend
+    // await _apiClient.post('/users/fcm-token', data: {'token': token});
+    
+    // Initialize local notifications
+    await _initializeLocalNotifications();
+    
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+    
+    // Handle background messages
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpened);
+    
+    // Handle terminated app messages
+    final initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      _handleMessageOpened(initialMessage);
+    }
+  }
+  
+  // Request notification permission
+  Future<void> _requestPermission() async {
+    final settings = await _firebaseMessaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: false,
+    );
+    
+    print('Permission granted: ${settings.authorizationStatus}');
+  }
+  
+  // Initialize local notifications
+  Future<void> _initializeLocalNotifications() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings();
+    
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+    
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+  }
+  
+  // Handle foreground message
+  Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    print('Received foreground message: ${message.messageId}');
+    
+    // Store in local database
+    await _storeNotification(message);
+    
+    // Show local notification
+    await _showLocalNotification(message);
+  }
+  
+  // Handle message opened
+  void _handleMessageOpened(RemoteMessage message) {
+    print('Message opened: ${message.messageId}');
+    
+    // Navigate to specific screen based on notification data
+    final data = message.data;
+    if (data.containsKey('screen')) {
+      // Navigate using GoRouter
+      // context.push(data['screen']);
+    }
+  }
+  
+  // Show local notification
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    const androidDetails = AndroidNotificationDetails(
+      'default_channel',
+      'Default Channel',
+      channelDescription: 'Default notification channel',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    
+    const iosDetails = DarwinNotificationDetails();
+    
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    
+    await _localNotifications.show(
+      message.hashCode,
+      message.notification?.title,
+      message.notification?.body,
+      details,
+      payload: message.data.toString(),
+    );
+  }
+  
+  // Store notification in local database
+  Future<void> _storeNotification(RemoteMessage message) async {
+    final notificationBox = HiveLocalStorage.getBox(
+      HiveLocalStorage.notificationsBox,
+    );
+    
+    final notification = {
+      'id': message.messageId,
+      'title': message.notification?.title,
+      'body': message.notification?.body,
+      'data': message.data,
+      'read': false,
+      'createdAt': DateTime.now().toIso8601String(),
+    };
+    
+    await notificationBox.add(notification);
+  }
+  
+  // Notification tapped callback
+  void _onNotificationTapped(NotificationResponse response) {
+    print('Notification tapped: ${response.payload}');
+    // Handle navigation
+  }
+}
+```
+
+### 10.2 In-App Notifications Center
+
+```dart
+// lib/src/presentation/screens/shared/notifications_screen.dart
+class NotificationsScreen extends ConsumerWidget {
+  const NotificationsScreen({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifications = ref.watch(notificationsProvider);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.done_all),
+            onPressed: () {
+              ref.read(notificationsProvider.notifier).markAllAsRead();
+            },
+            tooltip: 'Mark all as read',
+          ),
+        ],
+      ),
+      body: notifications.when(
+        data: (notifications) {
+          if (notifications.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.notifications_off, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No notifications yet'),
+                ],
+              ),
+            );
+          }
+          
+          return ListView.builder(
+            itemCount: notifications.length,
+            itemBuilder: (context, index) {
+              final notification = notifications[index];
+              return NotificationTile(notification: notification);
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Error: ${error.toString()}'),
+        ),
+      ),
+    );
+  }
+}
+
+class NotificationTile extends ConsumerWidget {
+  final AppNotification notification;
+  
+  const NotificationTile({
+    Key? key,
+    required this.notification,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Dismissible(
+      key: Key(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 16),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        ref.read(notificationsProvider.notifier).deleteNotification(
+          notification.id,
+        );
+      },
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: notification.read ? Colors.grey : Colors.blue,
+          child: Icon(
+            _getIconForType(notification.type),
+            color: Colors.white,
+          ),
+        ),
+        title: Text(
+          notification.title,
+          style: TextStyle(
+            fontWeight: notification.read ? FontWeight.normal : FontWeight.bold,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(notification.body),
+            const SizedBox(height: 4),
+            Text(
+              _formatTimestamp(notification.createdAt),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        onTap: () {
+          ref.read(notificationsProvider.notifier).markAsRead(notification.id);
+          _handleNotificationTap(context, notification);
+        },
+      ),
+    );
+  }
+  
+  IconData _getIconForType(String type) {
+    switch (type) {
+      case 'rent_reminder':
+        return Icons.payment;
+      case 'lease_approved':
+        return Icons.check_circle;
+      case 'message':
+        return Icons.message;
+      default:
+        return Icons.notifications;
+    }
+  }
+  
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+  
+  void _handleNotificationTap(BuildContext context, AppNotification notification) {
+    // Navigate based on notification type and data
+    final data = notification.data;
+    
+    switch (notification.type) {
+      case 'rent_reminder':
+        if (data.containsKey('leaseId')) {
+          context.push('/leases/${data['leaseId']}');
+        }
+        break;
+      case 'message':
+        if (data.containsKey('conversationId')) {
+          context.push('/messages/${data['conversationId']}');
+        }
+        break;
+    }
+  }
+}
+```
+
+### 10.3 Notifications Provider
+
+```dart
+// lib/src/presentation/providers/notifications_provider.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+final notificationsProvider = StateNotifierProvider<NotificationsNotifier, AsyncValue<List<AppNotification>>>(
+  (ref) => NotificationsNotifier(),
+);
+
+class NotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotification>>> {
+  NotificationsNotifier() : super(const AsyncValue.loading()) {
+    _loadNotifications();
+  }
+  
+  Future<void> _loadNotifications() async {
+    try {
+      final notificationBox = HiveLocalStorage.getBox(
+        HiveLocalStorage.notificationsBox,
+      );
+      
+      final notifications = notificationBox.values
+          .map((json) => AppNotification.fromJson(Map<String, dynamic>.from(json)))
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      state = AsyncValue.data(notifications);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+  
+  Future<void> markAsRead(String notificationId) async {
+    // Update in local database
+    final notificationBox = HiveLocalStorage.getBox(
+      HiveLocalStorage.notificationsBox,
+    );
+    
+    for (final key in notificationBox.keys) {
+      final notification = notificationBox.get(key);
+      if (notification['id'] == notificationId) {
+        notification['read'] = true;
+        await notificationBox.put(key, notification);
+        break;
+      }
+    }
+    
+    // Reload notifications
+    await _loadNotifications();
+  }
+  
+  Future<void> markAllAsRead() async {
+    final notificationBox = HiveLocalStorage.getBox(
+      HiveLocalStorage.notificationsBox,
+    );
+    
+    for (final key in notificationBox.keys) {
+      final notification = notificationBox.get(key);
+      notification['read'] = true;
+      await notificationBox.put(key, notification);
+    }
+    
+    await _loadNotifications();
+  }
+  
+  Future<void> deleteNotification(String notificationId) async {
+    final notificationBox = HiveLocalStorage.getBox(
+      HiveLocalStorage.notificationsBox,
+    );
+    
+    for (final key in notificationBox.keys) {
+      final notification = notificationBox.get(key);
+      if (notification['id'] == notificationId) {
+        await notificationBox.delete(key);
+        break;
+      }
+    }
+    
+    await _loadNotifications();
+  }
+}
+```
+
+---
+
+## 11. Theme System
+
+### 11.1 Theme Configuration
+
+```dart
+// lib/src/core/theme/app_theme.dart
+import 'package:flutter/material.dart';
+
+class AppTheme {
+  // Light Theme
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.light,
+      ),
+      scaffoldBackgroundColor: Colors.grey[50],
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+        elevation: 0,
+      ),
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+    );
+  }
+  
+  // Dark Theme
+  static ThemeData get darkTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: Colors.grey[900],
+      appBarTheme: AppBarTheme(
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.grey[850],
+      ),
+      cardTheme: CardTheme(
+        elevation: 4,
+        color: Colors.grey[850],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey[800],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 16,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+    );
+  }
+  
+  // Role-specific accent colors
+  static const Color tenantAccent = Colors.purple;
+  static const Color landlordAccent = Colors.green;
+}
+```
+
+### 11.2 Theme Provider
+
+```dart
+// lib/src/presentation/providers/theme_provider.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+enum ThemeMode {
+  light,
+  dark,
+  system,
+}
+
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
+  return ThemeNotifier();
+});
+
+class ThemeNotifier extends StateNotifier<ThemeMode> {
+  ThemeNotifier() : super(ThemeMode.system) {
+    _loadTheme();
+  }
+  
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeString = prefs.getString('theme_mode') ?? 'system';
+    
+    switch (themeString) {
+      case 'light':
+        state = ThemeMode.light;
+        break;
+      case 'dark':
+        state = ThemeMode.dark;
+        break;
+      default:
+        state = ThemeMode.system;
+    }
+  }
+  
+  Future<void> setTheme(ThemeMode mode) async {
+    state = mode;
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('theme_mode', mode.toString().split('.').last);
+  }
+}
+```
+
+### 11.3 Theme Toggle Widget
+
+```dart
+// lib/src/presentation/screens/shared/settings_screen.dart
+class SettingsScreen extends ConsumerWidget {
+  const SettingsScreen({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentTheme = ref.watch(themeProvider);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Settings'),
+      ),
+      body: ListView(
+        children: [
+          const SizedBox(height: 16),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Appearance',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Card(
+            margin: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                RadioListTile<ThemeMode>(
+                  title: const Text('Light Mode'),
+                  subtitle: const Text('Always use light theme'),
+                  value: ThemeMode.light,
+                  groupValue: currentTheme,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(themeProvider.notifier).setTheme(value);
+                    }
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('Dark Mode'),
+                  subtitle: const Text('Always use dark theme'),
+                  value: ThemeMode.dark,
+                  groupValue: currentTheme,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(themeProvider.notifier).setTheme(value);
+                    }
+                  },
+                ),
+                RadioListTile<ThemeMode>(
+                  title: const Text('System Default'),
+                  subtitle: const Text('Follow system theme'),
+                  value: ThemeMode.system,
+                  groupValue: currentTheme,
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(themeProvider.notifier).setTheme(value);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          // Biometric Settings
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Security',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Card(
+            margin: const EdgeInsets.all(16),
+            child: BiometricSettingTile(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class BiometricSettingTile extends ConsumerWidget {
+  const BiometricSettingTile({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final biometricService = ref.watch(biometricServiceProvider);
+    
+    return FutureBuilder<bool>(
+      future: biometricService.isBiometricEnabled(),
+      builder: (context, snapshot) {
+        final isEnabled = snapshot.data ?? false;
+        
+        return SwitchListTile(
+          title: const Text('Biometric Authentication'),
+          subtitle: const Text('Use fingerprint or face ID to login'),
+          value: isEnabled,
+          onChanged: (value) async {
+            if (value) {
+              // Check if biometric is available
+              final canCheck = await biometricService.canCheckBiometric();
+              if (!canCheck) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Biometric not available on this device'),
+                  ),
+                );
+                return;
+              }
+              
+              // Authenticate first
+              final authenticated = await biometricService.authenticate(
+                reason: 'Enable biometric authentication',
+              );
+              
+              if (authenticated) {
+                await biometricService.setBiometricEnabled(true);
+              }
+            } else {
+              await biometricService.setBiometricEnabled(false);
+            }
+          },
+        );
+      },
+    );
+  }
+}
+```
+
+### 11.4 Main App with Theme
+
+```dart
+// lib/main.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize services
+  await HiveLocalStorage.initialize();
+  // await FirebaseConfig.initialize(); // If using Firebase
+  
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends ConsumerWidget {
+  const MyApp({Key? key}) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
+    
+    return MaterialApp.router(
+      title: 'Rental Management',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode == ThemeMode.system
+          ? ThemeMode.system
+          : themeMode == ThemeMode.light
+              ? ThemeMode.light
+              : ThemeMode.dark,
+      routerConfig: router,
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+```
+
+---
+
+## 12. Payment Integration
+
+### 12.1 Payment Service Interface
+
+```dart
+// lib/src/services/payment/payment_service.dart
+abstract class PaymentService {
+  Future<PaymentIntent> createPaymentIntent({
+    required double amount,
+    required String currency,
+    required String leaseId,
+  });
+  
+  Future<bool> processPayment({
+    required PaymentIntent intent,
+    required PaymentMethod method,
+  });
+  
+  Future<List<Payment>> getPaymentHistory(String userId);
+}
+```
+
+### 12.2 Payment Models
+
+```dart
+// lib/src/data/models/payment.dart
+import 'package:json_annotation/json_annotation.dart';
+
+part 'payment.g.dart';
+
+@JsonSerializable()
+class Payment {
+  final String id;
+  final String leaseId;
+  final String tenantId;
+  final String landlordId;
+  final double amount;
+  final String currency;
+  final String status; // pending, completed, failed
+  final PaymentMethod method;
+  final DateTime createdAt;
+  final DateTime? paidAt;
+  
+  const Payment({
+    required this.id,
+    required this.leaseId,
+    required this.tenantId,
+    required this.landlordId,
+    required this.amount,
+    required this.currency,
+    required this.status,
+    required this.method,
+    required this.createdAt,
+    this.paidAt,
+  });
+  
+  factory Payment.fromJson(Map<String, dynamic> json) => _$PaymentFromJson(json);
+  Map<String, dynamic> toJson() => _$PaymentToJson(this);
+}
+
+enum PaymentMethod {
+  @JsonValue('card')
+  card,
+  @JsonValue('mobile_money')
+  mobileMoney,
+  @JsonValue('bank_transfer')
+  bankTransfer,
+}
+```
+
+### 12.3 Payment Screen (Tenant)
+
+```dart
+// lib/src/presentation/screens/tenant/payment_screen.dart
+class PaymentScreen extends ConsumerWidget {
+  final String leaseId;
+  
+  const PaymentScreen({
+    Key? key,
+    required this.leaseId,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lease = ref.watch(leaseDetailProvider(leaseId));
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Make Payment'),
+      ),
+      body: lease.when(
+        data: (lease) => PaymentForm(lease: lease),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Text('Error: ${error.toString()}'),
+        ),
+      ),
+    );
+  }
+}
+
+class PaymentForm extends ConsumerStatefulWidget {
+  final Lease lease;
+  
+  const PaymentForm({
+    Key? key,
+    required this.lease,
+  }) : super(key: key);
+  
+  @override
+  ConsumerState<PaymentForm> createState() => _PaymentFormState();
+}
+
+class _PaymentFormState extends ConsumerState<PaymentForm> {
+  final _formKey = GlobalKey<FormState>();
+  double _amount = 0;
+  PaymentMethod _selectedMethod = PaymentMethod.card;
+  bool _isProcessing = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _amount = widget.lease.monthlyRent;
+  }
+  
+  Future<void> _processPayment() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    
+    setState(() => _isProcessing = true);
+    
+    try {
+      // Create payment intent
+      final paymentService = ref.read(paymentServiceProvider);
+      final intent = await paymentService.createPaymentIntent(
+        amount: _amount,
+        currency: 'USD',
+        leaseId: widget.lease.id,
+      );
+      
+      // Process payment (integrate with payment provider here)
+      final success = await paymentService.processPayment(
+        intent: intent,
+        method: _selectedMethod,
+      );
+      
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Payment failed: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Property info card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.lease.propertyTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Monthly Rent: \$${widget.lease.monthlyRent}'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Amount field
+          TextFormField(
+            initialValue: _amount.toString(),
+            decoration: const InputDecoration(
+              labelText: 'Amount',
+              prefixText: '\$ ',
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter amount';
+              }
+              final amount = double.tryParse(value);
+              if (amount == null || amount <= 0) {
+                return 'Please enter valid amount';
+              }
+              return null;
+            },
+            onChanged: (value) {
+              _amount = double.tryParse(value) ?? 0;
+            },
+          ),
+          const SizedBox(height: 24),
+          
+          // Payment method selection
+          const Text(
+            'Payment Method',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...PaymentMethod.values.map((method) {
+            return RadioListTile<PaymentMethod>(
+              title: Text(_getMethodLabel(method)),
+              value: method,
+              groupValue: _selectedMethod,
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedMethod = value);
+                }
+              },
+            );
+          }).toList(),
+          const SizedBox(height: 32),
+          
+          // Payment button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isProcessing ? null : _processPayment,
+              child: _isProcessing
+                  ? const CircularProgressIndicator()
+                  : const Text('Pay Now'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getMethodLabel(PaymentMethod method) {
+    switch (method) {
+      case PaymentMethod.card:
+        return 'Credit/Debit Card';
+      case PaymentMethod.mobileMoney:
+        return 'Mobile Money';
+      case PaymentMethod.bankTransfer:
+        return 'Bank Transfer';
+    }
+  }
+}
+```
+
+---
+
+## 13. UI/UX Guidelines
+
+### 13.1 Design Principles
+
+**Clean & Modern:**
+- Use cards for content grouping
+- Consistent spacing (8px grid system)
+- Comfortable tap targets (minimum 48x48)
+- Smooth animations and transitions
+
+**Responsive:**
+- Adapt to different screen sizes
+- Support portrait and landscape
+- Graceful degradation on small screens
+
+**Accessible:**
+- High contrast ratios (WCAG AA compliant)
+- Semantic labels for screen readers
+- Support font scaling
+- Clear focus indicators
+
+### 13.2 Reusable Widgets
+
+**Property Card:**
+
+```dart
+// lib/src/presentation/widgets/common/property_card.dart
+class PropertyCard extends StatelessWidget {
+  final Property property;
+  final VoidCallback onTap;
+  final VoidCallback? onFavorite;
+  final bool isFavorite;
+  
+  const PropertyCard({
+    Key? key,
+    required this.property,
+    required this.onTap,
+    this.onFavorite,
+    this.isFavorite = false,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Property image
+            Stack(
+              children: [
+                CachedNetworkImage(
+                  imageUrl: property.images.first,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    height: 200,
+                    color: Colors.grey[300],
+                    child: const Icon(Icons.error),
+                  ),
+                ),
+                // Favorite button
+                if (onFavorite != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white,
+                      child: IconButton(
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.red : Colors.grey,
+                        ),
+                        onPressed: onFavorite,
+                      ),
+                    ),
+                  ),
+                // Availability badge
+                if (property.available)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Available',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Property details
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    property.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          property.address.city,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '\$${property.rent}/${property.currency}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.bed, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text('${property.bedrooms}'),
+                          const SizedBox(width: 12),
+                          Icon(Icons.bathtub, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 4),
+                          Text('${property.bathrooms}'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+**Loading Skeleton:**
+
+```dart
+// lib/src/presentation/widgets/common/skeleton_loader.dart
+class SkeletonLoader extends StatelessWidget {
+  final double? width;
+  final double? height;
+  final BorderRadius? borderRadius;
+  
+  const SkeletonLoader({
+    Key? key,
+    this.width,
+    this.height,
+    this.borderRadius,
+  }) : super(key: key);
+  
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: borderRadius ?? BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+}
+```
+
+---
+
+## 14. Accessibility
+
+### 14.1 Semantic Widgets
+
+```dart
+// Example: Accessible button
+ElevatedButton(
+  onPressed: () {},
+  child: const Text('Login'),
+  // Semantic label
+  semanticsLabel: 'Login button. Double tap to login',
+);
+
+// Example: Accessible image
+Semantics(
+  label: 'Property image showing a 2-bedroom apartment',
+  child: Image.network(imageUrl),
+);
+```
+
+### 14.2 Color Contrast
+
+Ensure minimum contrast ratios:
+- Normal text: 4.5:1
+- Large text: 3:1
+- UI components: 3:1
+
+### 14.3 Font Scaling
+
+```dart
+// Use TextStyle.copyWith to support scaling
+Text(
+  'Property Title',
+  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+    fontSize: 20, // Base size
+  ),
+);
+```
+
+### 14.4 Screen Reader Support
+
+```dart
+// Announce changes to screen readers
+Semantics(
+  liveRegion: true,
+  child: Text(statusMessage),
+);
+```
+
+---
+
+## 15. Testing Strategy
+
+### 15.1 Unit Tests
+
+```dart
+// test/domain/usecases/login_usecase_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+
+@GenerateMocks([AuthRepository])
+void main() {
+  late MockAuthRepository mockAuthRepository;
+  late LoginUseCase loginUseCase;
+  
+  setUp(() {
+    mockAuthRepository = MockAuthRepository();
+    loginUseCase = LoginUseCase(mockAuthRepository);
+  });
+  
+  group('LoginUseCase', () {
+    test('should return User when login is successful', () async {
+      // Arrange
+      const email = 'test@example.com';
+      const password = 'password123';
+      final expectedUser = User(
+        id: '123',
+        email: email,
+        name: 'Test User',
+        phone: '+255712345678',
+        roles: ['tenant'],
+        createdAt: DateTime.now(),
+      );
+      
+      when(mockAuthRepository.loginWithEmail(
+        email: email,
+        password: password,
+      )).thenAnswer((_) async => expectedUser);
+      
+      // Act
+      final result = await loginUseCase(email, password);
+      
+      // Assert
+      expect(result, expectedUser);
+      verify(mockAuthRepository.loginWithEmail(
+        email: email,
+        password: password,
+      )).called(1);
+    });
+    
+    test('should throw AuthException when login fails', () async {
+      // Arrange
+      const email = 'test@example.com';
+      const password = 'wrongpassword';
+      
+      when(mockAuthRepository.loginWithEmail(
+        email: email,
+        password: password,
+      )).thenThrow(AuthException('Invalid credentials'));
+      
+      // Act & Assert
+      expect(
+        () => loginUseCase(email, password),
+        throwsA(isA<AuthException>()),
+      );
+    });
+  });
+}
+```
+
+### 15.2 Widget Tests
+
+```dart
+// test/presentation/screens/auth/login_screen_test.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+void main() {
+  testWidgets('LoginScreen displays email and password fields',
+      (WidgetTester tester) async {
+    // Build the widget
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: LoginScreen(),
+        ),
+      ),
+    );
+    
+    // Verify email field exists
+    expect(find.byType(TextFormField), findsNWidgets(2));
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+    
+    // Verify login button exists
+    expect(find.widgetWithText(ElevatedButton, 'Login'), findsOneWidget);
+  });
+  
+  testWidgets('LoginScreen validates empty fields',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(
+          home: LoginScreen(),
+        ),
+      ),
+    );
+    
+    // Tap login without entering credentials
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
+    await tester.pump();
+    
+    // Verify validation errors
+    expect(find.text('Please enter email'), findsOneWidget);
+    expect(find.text('Please enter password'), findsOneWidget);
+  });
+}
+```
+
+### 15.3 Integration Tests
+
+```dart
+// integration_test/app_test.dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:rental_management_app/main.dart' as app;
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  
+  group('Complete user flow', () {
+    testWidgets('User can login and browse properties',
+        (WidgetTester tester) async {
+      // Start the app
+      app.main();
+      await tester.pumpAndSettle();
+      
+      // Enter credentials
+      await tester.enterText(
+        find.byKey(const Key('email_field')),
+        'test@example.com',
+      );
+      await tester.enterText(
+        find.byKey(const Key('password_field')),
+        'password123',
+      );
+      
+      // Tap login
+      await tester.tap(find.byKey(const Key('login_button')));
+      await tester.pumpAndSettle();
+      
+      // Verify navigation to home screen
+      expect(find.text('Dashboard'), findsOneWidget);
+      
+      // Navigate to properties
+      await tester.tap(find.text('Browse Properties'));
+      await tester.pumpAndSettle();
+      
+      // Verify properties are displayed
+      expect(find.byType(PropertyCard), findsWidgets);
+    });
+  });
+}
+```
+
+---
+
+## 16. Performance Optimization
+
+### 16.1 Image Optimization
+
+```dart
+// Use cached_network_image for efficient image loading
+CachedNetworkImage(
+  imageUrl: imageUrl,
+  memCacheHeight: 400, // Limit memory cache size
+  memCacheWidth: 400,
+  fadeInDuration: const Duration(milliseconds: 300),
+);
+```
+
+### 16.2 List Performance
+
+```dart
+// Use ListView.builder for long lists
+ListView.builder(
+  itemCount: properties.length,
+  itemBuilder: (context, index) {
+    return PropertyCard(property: properties[index]);
+  },
+);
+
+// Use const constructors where possible
+const Text('Static text');
+```
+
+### 16.3 Avoid Rebuilds
+
+```dart
+// Use Consumer to rebuild only specific widgets
+Consumer(
+  builder: (context, ref, child) {
+    final user = ref.watch(currentUserProvider);
+    return Text(user.name);
+  },
+);
+```
+
+---
+
+## 17. Security Best Practices
+
+### 17.1 Secure Token Storage
+
+```dart
+// Always use flutter_secure_storage for tokens
+final secureStorage = FlutterSecureStorage();
+await secureStorage.write(key: 'auth_token', value: token);
+```
+
+### 17.2 SSL Pinning (Optional)
+
+```dart
+// For high-security requirements
+class SslPinningClient {
+  static Dio createDio() {
+    final dio = Dio();
+    
+    (dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
+        (client) {
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) {
+        // Verify certificate
+        return cert.sha1.toString() == 'YOUR_CERT_SHA1';
+      };
+      return client;
+    };
+    
+    return dio;
+  }
+}
+```
+
+### 17.3 Input Validation
+
+```dart
+// Always validate user input
+String? validateEmail(String? value) {
+  if (value == null || value.isEmpty) {
+    return 'Please enter email';
+  }
+  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+    return 'Please enter valid email';
+  }
+  return null;
+}
+```
+
+---
+
+## 18. Deployment
+
+### 18.1 Android Deployment
+
+**Build APK:**
+```bash
+flutter build apk --release
+```
+
+**Build App Bundle (for Play Store):**
+```bash
+flutter build appbundle --release
+```
+
+**Sign the App:**
+```bash
+# Create keystore
+keytool -genkey -v -keystore ~/rental-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias rental
+
+# Configure in android/key.properties
+storePassword=<password>
+keyPassword=<password>
+keyAlias=rental
+storeFile=<path-to-jks>
+```
+
+### 18.2 iOS Deployment
+
+**Build IPA:**
+```bash
+flutter build ios --release
+```
+
+**Archive and Upload:**
+1. Open Xcode
+2. Product → Archive
+3. Distribute App → App Store Connect
+
+---
+
+## 19. Example Tasks
+
+### Task 1: Implement Firebase Auth & Email Sign-in
+
+**Acceptance Criteria:**
+- User can register with email/password
+- User can login with email/password
+- User can logout
+- Roles are assigned at registration
+- Token is stored securely
+
+### Task 2: Tenant Property List
+
+**Acceptance Criteria:**
+- Load properties from backend
+- Show skeleton loaders during loading
+- Support pull-to-refresh
+- Cache properties for offline access
+- Display property cards with images
+
+### Task 3: Landlord Dashboard
+
+**Acceptance Criteria:**
+- Show list of landlord's properties
+- Create property form with image upload
+- Edit existing properties
+- Delete properties with confirmation
+- View occupancy statistics
+
+### Task 4: Biometric Unlock
+
+**Acceptance Criteria:**
+- User can enable/disable biometric in settings
+- Biometric prompt appears on app open when enabled
+- Fallback to email/password login
+- Works on both Android and iOS
+
+### Task 5: Notifications
+
+**Acceptance Criteria:**
+- FCM integration working
+- Incoming notifications stored in local database
+- Notifications screen displays all notifications
+- Mark as read functionality
+- Navigate to relevant screen on tap
+
+### Task 6: Theme Toggle
+
+**Acceptance Criteria:**
+- Light/Dark/System theme options
+- Theme preference persisted
+- Smooth theme transitions
+- All screens support both themes
+
+### Task 7: Offline Caching
+
+**Acceptance Criteria:**
+- Property list cached locally
+- Properties available offline
+- Offline indicator visible when disconnected
+- Automatic sync when connection restored
+
+### Task 8: Tests
+
+**Acceptance Criteria:**
+- Unit tests for auth use cases pass
+- Widget test for property card passes
+- Integration test for login flow passes
+- Test coverage > 70%
+
+---
+
+## 📚 Additional Resources
+
+### Documentation
+- [Flutter Documentation](https://docs.flutter.dev/)
+- [Riverpod Documentation](https://riverpod.dev/)
+- [GoRouter Documentation](https://pub.dev/packages/go_router)
+- [Firebase Documentation](https://firebase.google.com/docs/flutter/setup)
+
+### Community
+- [Flutter Community on Discord](https://discord.gg/flutter)
+- [Stack Overflow - Flutter](https://stackoverflow.com/questions/tagged/flutter)
+- [r/FlutterDev](https://www.reddit.com/r/FlutterDev/)
+
+### Tools
+- [Flutter DevTools](https://docs.flutter.dev/development/tools/devtools/overview)
+- [VS Code Flutter Extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter)
+- [Android Studio Flutter Plugin](https://plugins.jetbrains.com/plugin/9212-flutter)
+
+---
+
+## 🎯 Summary
+
+This comprehensive guide provides everything needed to build a production-ready Flutter rental management app with:
+
+✅ Clean architecture and modular code structure
+✅ Multiple authentication methods including biometric
+✅ Offline-first with automatic synchronization
+✅ Push notifications with in-app notification center
+✅ Light/Dark theme support
+✅ Payment integration preparation
+✅ Comprehensive testing strategy
+✅ Security best practices
+✅ Deployment guidelines
+
+The app is designed to be maintainable, scalable, and ready for production deployment on both Android and iOS platforms.
+
+---
+
+**Last Updated:** November 2025
+**Version:** 2.0.0
+**Author:** Development Team
+
+For questions or issues, please refer to the repository issues or contact the development team.
+

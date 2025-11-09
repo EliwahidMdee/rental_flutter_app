@@ -8,7 +8,10 @@ import '../presentation/auth/providers/auth_provider.dart';
 
 import '../presentation/admin/dashboard/admin_dashboard_screen.dart';
 import '../presentation/landlord/dashboard/landlord_dashboard_screen.dart';
+import '../presentation/landlord/properties/screens/property_list_screen.dart';
 import '../presentation/tenant/dashboard/tenant_dashboard_screen.dart';
+import '../presentation/tenant/payments/screens/payment_history_screen.dart';
+import '../presentation/common/screens/settings_screen.dart';
 
 /// Router Provider
 /// 
@@ -86,9 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: 'properties',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Properties')),
-            ),
+            builder: (context, state) => const PropertyListScreen(),
           ),
           GoRoute(
             path: 'tenants',
@@ -118,9 +119,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: 'history',
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Payment History')),
-            ),
+            builder: (context, state) => const PaymentHistoryScreen(),
           ),
           GoRoute(
             path: 'lease',
@@ -140,9 +139,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Settings (shared across all roles)
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Settings')),
-        ),
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

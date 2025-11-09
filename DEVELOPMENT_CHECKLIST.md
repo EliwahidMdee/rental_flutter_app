@@ -95,25 +95,17 @@
 - [x] Implement retry logic
 
 ## Common Widgets
-- [ ] Create Custom AppBar widget
+- [x] Create Custom AppBar widget
 - [x] Create Custom Button widget
 - [x] Create Custom TextField widget
 - [x] Create Loading Indicator widget
 - [x] Create Error Widget
 - [x] Create Empty State Widget
-- [ ] Create Dashboard Card widget
+- [x] Create Dashboard Card widget
 - [x] Create Property Card widget
 - [x] Create Payment Card widget
-- [ ] Create Notification Item widget
-- [ ] Create Skeleton Loader widget
-- [ ] Create Loading Indicator widget
-- [ ] Create Error Widget
-- [ ] Create Empty State Widget
-- [ ] Create Dashboard Card widget
-- [ ] Create Property Card widget
-- [ ] Create Payment Card widget
-- [ ] Create Notification Item widget
-- [ ] Create Skeleton Loader widget
+- [x] Create Notification Item widget
+- [x] Create Skeleton Loader widget
 
 ## Forms & Validation
 - [ ] Implement form validators
@@ -152,16 +144,16 @@
 - [ ] Add help/support section
 
 ## Testing
-- [ ] Set up test environment
-- [ ] Write unit tests for models
-- [ ] Write unit tests for repositories
-- [ ] Write unit tests for providers
-- [ ] Write widget tests for screens
-- [ ] Write widget tests for common widgets
-- [ ] Write integration tests for auth flow
-- [ ] Write integration tests for payment flow
-- [ ] Add test coverage reporting
-- [ ] Aim for >80% code coverage
+- [x] Set up test environment
+- [x] Write unit tests for models
+- [x] Write unit tests for repositories
+- [x] Write unit tests for providers
+- [x] Write widget tests for screens
+- [x] Write widget tests for common widgets
+- [x] Write integration tests for auth flow
+- [x] Write integration tests for payment flow
+- [x] Add test coverage reporting
+- [x] Aim for >80% code coverage
 
 ## Security
 - [ ] Implement SSL pinning

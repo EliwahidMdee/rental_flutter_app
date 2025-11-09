@@ -20,6 +20,7 @@ import '../presentation/tenant/payments/screens/payment_history_screen.dart';
 import '../presentation/tenant/payments/screens/make_payment_screen.dart';
 import '../presentation/tenant/lease/screens/lease_detail_screen.dart';
 import '../presentation/tenant/maintenance/screens/maintenance_request_screen.dart';
+import '../presentation/tenant/maintenance/screens/maintenance_history_screen.dart';
 import '../presentation/common/screens/settings_screen.dart';
 import '../presentation/common/screens/notifications_screen.dart';
 import '../presentation/common/screens/conversations_screen.dart';
@@ -150,6 +151,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'maintenance',
             builder: (context, state) => const MaintenanceRequestScreen(),
+          ),
+          GoRoute(
+            path: 'maintenance-history',
+            builder: (context, state) => const MaintenanceHistoryScreen(),
           ),
           GoRoute(
             path: 'notifications',

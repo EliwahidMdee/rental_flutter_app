@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../common/widgets/loading_indicator.dart';
-import '../../../common/widgets/error_display.dart';
-import '../../../common/widgets/empty_state.dart';
+import '../widgets/loading_indicator.dart';
+import '../widgets/error_display.dart';
+import '../widgets/empty_state.dart';
 
 /// Notifications Screen
 /// 

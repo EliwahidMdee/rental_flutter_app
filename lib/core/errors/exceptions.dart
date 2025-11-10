@@ -21,25 +21,25 @@ class ServerException extends ApiException {
 }
 
 class UnauthorizedException extends ApiException {
-  UnauthorizedException(super.message) : super(401);
+  UnauthorizedException(String message) : super(message, 401);
 }
 
 class ForbiddenException extends ApiException {
-  ForbiddenException(super.message) : super(403);
+  ForbiddenException(String message) : super(message, 403);
 }
 
 class NotFoundException extends ApiException {
-  NotFoundException(super.message) : super(404);
+  NotFoundException(String message) : super(message, 404);
 }
 
 class BadRequestException extends ApiException {
-  BadRequestException(super.message) : super(400);
+  BadRequestException(String message) : super(message, 400);
 }
 
 class ValidationException extends ApiException {
   final Map<String, dynamic>? errors;
   
-  ValidationException(super.message, {this.errors}) : super(422);
+  ValidationException(String message, {this.errors}) : super(message, 422);
 }
 
 class CacheException implements Exception {

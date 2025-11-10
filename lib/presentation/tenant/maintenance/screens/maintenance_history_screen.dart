@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../common/widgets/loading_indicator.dart';
-import '../../common/widgets/empty_state.dart';
-import '../../../core/utils/formatters.dart';
+import '../../../common/widgets/loading_indicator.dart';
+import '../../../common/widgets/empty_state.dart';
+import '../../../../core/utils/formatters.dart';
 
 /// Maintenance History Screen
 /// 
@@ -84,7 +84,7 @@ class _MaintenanceHistoryScreenState extends ConsumerState<MaintenanceHistoryScr
         ],
       ),
       body: filteredRequests.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               message: 'No maintenance requests',
               subtitle: 'Submit a new request to get started',
               icon: Icons.build_outlined,

@@ -35,7 +35,7 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: mockNotifications.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               message: 'No notifications',
               subtitle: 'You\'re all caught up!',
               icon: Icons.notifications_none,

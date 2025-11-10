@@ -25,7 +25,7 @@ class PaymentApprovalScreen extends ConsumerWidget {
       body: pendingPaymentsAsync.when(
         data: (payments) {
           if (payments.isEmpty) {
-            return const EmptyState(
+            return EmptyState(
               message: 'No pending payments',
               subtitle: 'All payments have been processed',
               icon: Icons.check_circle_outline,
@@ -54,7 +54,7 @@ class PaymentApprovalScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const LoadingIndicator(message: 'Loading pending payments...'),
+        loading: () => LoadingIndicator(message: 'Loading pending payments...'),
         error: (error, stack) => ErrorDisplay(
           message: error.toString(),
           onRetry: () {

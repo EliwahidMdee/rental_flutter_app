@@ -84,7 +84,7 @@ class _MaintenanceHistoryScreenState extends ConsumerState<MaintenanceHistoryScr
         ],
       ),
       body: filteredRequests.isEmpty
-          ? const EmptyState(
+          ? EmptyState(
               message: 'No maintenance requests',
               subtitle: 'Submit a new request to get started',
               icon: Icons.build_outlined,

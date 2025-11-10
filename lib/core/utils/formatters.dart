@@ -23,6 +23,11 @@ class Formatters {
     }
   }
 
+  /// Format date from DateTime object
+  static String formatDate(DateTime date, {String format = 'MMM dd, yyyy'}) {
+    return DateFormat(format).format(date);
+  }
+
   /// Format date time
   static String dateTime(String dateTimeString, {String format = 'MMM dd, yyyy hh:mm a'}) {
     try {
@@ -82,9 +87,17 @@ class Formatters {
   }
 
   /// Relative time (e.g., "2 hours ago")
-  static String relativeTime(String dateTimeString) {
+  static String relativeTime(dynamic dateTimeInput) {
     try {
-      final dateTime = DateTime.parse(dateTimeString);
+      final DateTime dateTime;
+      if (dateTimeInput is DateTime) {
+        dateTime = dateTimeInput;
+      } else if (dateTimeInput is String) {
+        dateTime = DateTime.parse(dateTimeInput);
+      } else {
+        return dateTimeInput.toString();
+      }
+      
       final now = DateTime.now();
       final difference = now.difference(dateTime);
       
@@ -104,7 +117,7 @@ class Formatters {
         return '${(difference.inDays / 365).floor()} years ago';
       }
     } catch (e) {
-      return dateTimeString;
+      return dateTimeInput.toString();
     }
   }
 

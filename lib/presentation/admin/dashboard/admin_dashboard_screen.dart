@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../common/providers/dashboard_provider.dart';
+import '../../common/providers/payment_provider.dart';
+import '../../common/widgets/loading_indicator.dart';
+import '../../common/widgets/error_display.dart';
 
 /// Admin Dashboard Screen
 class AdminDashboardScreen extends ConsumerWidget {
@@ -14,6 +18,12 @@ class AdminDashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Fetch dashboard stats
+    final dashboardAsync = ref.watch(dashboardStatsProvider);
+    
+    // Fetch pending payments count
+    final pendingPaymentsAsync = ref.watch(pendingPaymentsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -123,46 +133,56 @@ class AdminDashboardScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStatCard(
-                  context,
-                  'Total Properties',
-                  '42',
-                  Icons.home_work_outlined,
-                  Colors.blue,
-                  isDark,
-                ),
-                _buildStatCard(
-                  context,
-                  'Active Tenants',
-                  '128',
-                  Icons.people_outline,
-                  AppTheme.landlordAccent,
-                  isDark,
-                ),
-                _buildStatCard(
-                  context,
-                  'Pending Payments',
-                  '8',
-                  Icons.pending_actions,
-                  Colors.amber,
-                  isDark,
-                ),
-                _buildStatCard(
-                  context,
-                  'Total Revenue',
-                  '\$45.2K',
-                  Icons.attach_money,
-                  Colors.purple,
-                  isDark,
-                ),
-              ],
+            dashboardAsync.when(
+              data: (dashboard) {
+                return pendingPaymentsAsync.when(
+                  data: (pendingPayments) => GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _buildStatCard(
+                        context,
+                        'Total Properties',
+                        '${dashboard.totalProperties}',
+                        Icons.home_work_outlined,
+                        Colors.blue,
+                        isDark,
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Active Tenants',
+                        '${dashboard.totalTenants}',
+                        Icons.people_outline,
+                        AppTheme.landlordAccent,
+                        isDark,
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Pending Payments',
+                        '${pendingPayments.length}',
+                        Icons.pending_actions,
+                        Colors.amber,
+                        isDark,
+                      ),
+                      _buildStatCard(
+                        context,
+                        'Total Revenue',
+                        '\$${(dashboard.monthlyRevenue / 1000).toStringAsFixed(1)}K',
+                        Icons.attach_money,
+                        Colors.purple,
+                        isDark,
+                      ),
+                    ],
+                  ),
+                  loading: () => const Center(child: LoadingIndicator()),
+                  error: (error, stack) => ErrorDisplay(message: error.toString()),
+                );
+              },
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (error, stack) => ErrorDisplay(message: error.toString()),
             ),
             const SizedBox(height: 28),
 

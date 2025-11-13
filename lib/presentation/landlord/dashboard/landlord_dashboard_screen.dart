@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../config/theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../common/providers/dashboard_provider.dart';
+import '../../common/widgets/loading_indicator.dart';
+import '../../common/widgets/error_display.dart';
 
 /// Landlord Dashboard Screen
 class LandlordDashboardScreen extends ConsumerWidget {
@@ -14,6 +17,9 @@ class LandlordDashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Fetch dashboard stats
+    final dashboardAsync = ref.watch(dashboardStatsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -123,18 +129,22 @@ class LandlordDashboardScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
-            GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                _buildStatCard(context, 'Properties', '12', Icons.apartment_outlined, Colors.blue, isDark),
-                _buildStatCard(context, 'Tenants', '45', Icons.people_outline, AppTheme.landlordAccent, isDark),
-                _buildStatCard(context, 'Occupancy', '92%', Icons.home_outlined, AppTheme.accentOrange, isDark),
-                _buildStatCard(context, 'Revenue', '\$18.5K', Icons.attach_money, Colors.purple, isDark),
-              ],
+            dashboardAsync.when(
+              data: (dashboard) => GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildStatCard(context, 'Properties', '${dashboard.totalProperties}', Icons.apartment_outlined, Colors.blue, isDark),
+                  _buildStatCard(context, 'Tenants', '${dashboard.totalTenants}', Icons.people_outline, AppTheme.landlordAccent, isDark),
+                  _buildStatCard(context, 'Occupancy', '${dashboard.occupancyRate.toStringAsFixed(0)}%', Icons.home_outlined, AppTheme.accentOrange, isDark),
+                  _buildStatCard(context, 'Revenue', '\$${(dashboard.monthlyRevenue / 1000).toStringAsFixed(1)}K', Icons.attach_money, Colors.purple, isDark),
+                ],
+              ),
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (error, stack) => ErrorDisplay(message: error.toString()),
             ),
             const SizedBox(height: 28),
 

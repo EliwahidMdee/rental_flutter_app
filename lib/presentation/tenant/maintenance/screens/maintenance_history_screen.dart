@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../common/widgets/loading_indicator.dart';
 import '../../../common/widgets/empty_state.dart';
-import '../../../../core/utils/formatters.dart';
+import '../../../common/widgets/error_display.dart';
+import '../../../common/providers/maintenance_provider.dart';
+import '../../../../config/theme.dart';
 
 /// Maintenance History Screen
 /// 
-/// View all maintenance requests and their status
+/// View all maintenance requests and their status with real-time data
 
 class MaintenanceHistoryScreen extends ConsumerStatefulWidget {
   const MaintenanceHistoryScreen({super.key});
@@ -20,510 +22,422 @@ class MaintenanceHistoryScreen extends ConsumerStatefulWidget {
 class _MaintenanceHistoryScreenState extends ConsumerState<MaintenanceHistoryScreen> {
   String? _filterStatus;
 
-  // Mock data - replace with provider
-  final List<MaintenanceRequest> _requests = [
-    MaintenanceRequest(
-      id: 1,
-      title: 'Leaking faucet in kitchen',
-      category: 'Plumbing',
-      urgency: 'high',
-      status: 'in_progress',
-      location: 'Kitchen',
-      description: 'The kitchen faucet has been dripping continuously...',
-      requestedDate: DateTime.now().subtract(const Duration(days: 2)),
-      assignedTo: 'Mike Johnson',
-    ),
-    MaintenanceRequest(
-      id: 2,
-      title: 'AC not cooling properly',
-      category: 'Cooling',
-      urgency: 'medium',
-      status: 'completed',
-      location: 'Living Room',
-      description: 'Air conditioner is running but not cooling the room...',
-      requestedDate: DateTime.now().subtract(const Duration(days: 10)),
-      completedDate: DateTime.now().subtract(const Duration(days: 5)),
-      assignedTo: 'Sarah Williams',
-    ),
-    MaintenanceRequest(
-      id: 3,
-      title: 'Broken door lock',
-      category: 'Doors/Windows',
-      urgency: 'emergency',
-      status: 'pending',
-      location: 'Main entrance',
-      description: 'Front door lock is jammed and cannot be opened...',
-      requestedDate: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    MaintenanceRequest(
-      id: 4,
-      title: 'Light fixture not working',
-      category: 'Electrical',
-      urgency: 'low',
-      status: 'cancelled',
-      location: 'Bedroom 2',
-      description: 'Ceiling light stopped working suddenly...',
-      requestedDate: DateTime.now().subtract(const Duration(days: 15)),
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final filteredRequests = _filterStatus == null
-        ? _requests
-        : _requests.where((r) => r.status == _filterStatus).toList();
+    final maintenanceAsync = ref.watch(currentUserMaintenanceProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Maintenance History'),
+        elevation: 0,
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            onSelected: (status) {
+              setState(() {
+                _filterStatus = status == 'all' ? null : status;
+              });
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'all', child: Text('All Status')),
+              const PopupMenuItem(value: 'pending', child: Text('Pending')),
+              const PopupMenuItem(value: 'in_progress', child: Text('In Progress')),
+              const PopupMenuItem(value: 'completed', child: Text('Completed')),
+              const PopupMenuItem(value: 'cancelled', child: Text('Cancelled')),
+            ],
           ),
         ],
       ),
-      body: filteredRequests.isEmpty
-          ? EmptyState(
-              message: 'No maintenance requests',
-              subtitle: 'Submit a new request to get started',
-              icon: Icons.build_outlined,
-            )
-          : RefreshIndicator(
-              onRefresh: () async {
-                // TODO: Refresh data
-                await Future.delayed(const Duration(seconds: 1));
-              },
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: filteredRequests.length,
-                itemBuilder: (context, index) {
-                  final request = filteredRequests[index];
-                  return _buildRequestCard(context, request);
-                },
-              ),
-            ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/tenant/maintenance'),
+        onPressed: () {
+          // Navigate to create maintenance request
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Create Request coming soon')),
+          );
+        },
         icon: const Icon(Icons.add),
         label: const Text('New Request'),
+      ),
+      body: maintenanceAsync.when(
+        data: (requests) {
+          // Apply filter
+          final filteredRequests = _filterStatus == null
+              ? requests
+              : requests.where((r) => r.status == _filterStatus).toList();
+
+          if (filteredRequests.isEmpty) {
+            return EmptyState(
+              message: _filterStatus == null ? 'No Maintenance Requests' : 'No $_filterStatus Requests',
+              subtitle: 'Your maintenance requests will appear here',
+              icon: Icons.build_circle_outlined,
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(currentUserMaintenanceProvider);
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filteredRequests.length,
+              itemBuilder: (context, index) {
+                final request = filteredRequests[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildMaintenanceCard(context, request, isDark),
+                );
+              },
+            ),
+          );
+        },
+        loading: () => const LoadingIndicator(message: 'Loading maintenance requests...'),
+        error: (error, stack) => ErrorDisplay(
+          message: error.toString(),
+          onRetry: () {
+            ref.invalidate(currentUserMaintenanceProvider);
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, MaintenanceRequest request) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () => _showRequestDetail(context, request),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title and Status
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      request.title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildStatusBadge(request.status),
-                ],
-              ),
-              const SizedBox(height: 8),
+  Widget _buildMaintenanceCard(BuildContext context, dynamic request, bool isDark) {
+    final statusColor = _getStatusColor(request.status);
+    final priorityColor = _getPriorityColor(request.priority);
 
-              // Category and Urgency
-              Row(
-                children: [
-                  Chip(
-                    label: Text(request.category),
-                    avatar: const Icon(Icons.category, size: 16),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getUrgencyColor(request.urgency).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.priority_high,
-                          size: 14,
-                          color: _getUrgencyColor(request.urgency),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          request.urgency.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: _getUrgencyColor(request.urgency),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Location
-              Row(
-                children: [
-                  Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    request.location,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Date
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Requested ${Formatters.relativeTime(request.requestedDate)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-
-              // Assigned to
-              if (request.assignedTo != null) ...[
-                const SizedBox(height: 8),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            statusColor.withOpacity(isDark ? 0.15 : 0.08),
+            statusColor.withOpacity(isDark ? 0.1 : 0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: statusColor.withOpacity(isDark ? 0.3 : 0.2),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: statusColor.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            _showRequestDetail(context, request);
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header row
                 Row(
                   children: [
-                    Icon(Icons.person, size: 16, color: Colors.grey.shade600),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Assigned to ${request.assignedTo}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(20),
                       ),
+                      child: Text(
+                        request.status.toUpperCase().replaceAll('_', ' '),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Priority badge
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: priorityColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getPriorityIcon(request.priority),
+                        size: 16,
+                        color: priorityColor,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Date
+                    Text(
+                      DateFormat.MMMd().format(DateTime.parse(request.createdAt)),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Title
+                Text(
+                  request.title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+
+                // Description
+                Text(
+                  request.description,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
+                      ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+
+                // Footer row
+                Row(
+                  children: [
+                    // Category
+                    if (request.category != null) ...[
+                      Icon(
+                        _getCategoryIcon(request.category!),
+                        size: 16,
+                        color: AppTheme.primaryColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        request.category!.toUpperCase(),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                    const Spacer(),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                     ),
                   ],
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color color;
-    String label;
-
-    switch (status) {
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
       case 'pending':
-        color = Colors.orange;
-        label = 'Pending';
-        break;
+        return AppTheme.warningColor;
       case 'in_progress':
-        color = Colors.blue;
-        label = 'In Progress';
-        break;
+        return AppTheme.infoColor;
       case 'completed':
-        color = Colors.green;
-        label = 'Completed';
-        break;
+        return AppTheme.successColor;
       case 'cancelled':
-        color = Colors.grey;
-        label = 'Cancelled';
-        break;
-      default:
-        color = Colors.grey;
-        label = status;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-    );
-  }
-
-  Color _getUrgencyColor(String urgency) {
-    switch (urgency) {
-      case 'low':
-        return Colors.green;
-      case 'medium':
-        return Colors.orange;
-      case 'high':
-        return Colors.deepOrange;
-      case 'emergency':
-        return Colors.red;
+        return AppTheme.errorColor;
       default:
         return Colors.grey;
     }
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter by Status'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildFilterOption('All', null),
-            _buildFilterOption('Pending', 'pending'),
-            _buildFilterOption('In Progress', 'in_progress'),
-            _buildFilterOption('Completed', 'completed'),
-            _buildFilterOption('Cancelled', 'cancelled'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'low':
+        return AppTheme.successColor;
+      case 'medium':
+        return AppTheme.warningColor;
+      case 'high':
+        return AppTheme.accentOrange;
+      case 'urgent':
+      case 'emergency':
+        return AppTheme.errorColor;
+      default:
+        return Colors.grey;
+    }
   }
 
-  Widget _buildFilterOption(String label, String? value) {
-    return RadioListTile<String?>(
-      title: Text(label),
-      value: value,
-      groupValue: _filterStatus,
-      onChanged: (newValue) {
-        setState(() => _filterStatus = newValue);
-        Navigator.pop(context);
-      },
-    );
+  IconData _getPriorityIcon(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'low':
+        return Icons.arrow_downward;
+      case 'medium':
+        return Icons.remove;
+      case 'high':
+        return Icons.arrow_upward;
+      case 'urgent':
+      case 'emergency':
+        return Icons.priority_high;
+      default:
+        return Icons.info;
+    }
   }
 
-  void _showRequestDetail(BuildContext context, MaintenanceRequest request) {
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'plumbing':
+        return Icons.water_drop;
+      case 'electrical':
+        return Icons.electrical_services;
+      case 'hvac':
+      case 'heating':
+      case 'cooling':
+        return Icons.ac_unit;
+      case 'appliance':
+      case 'appliances':
+        return Icons.kitchen;
+      case 'structural':
+        return Icons.foundation;
+      default:
+        return Icons.build;
+    }
+  }
+
+  void _showRequestDetail(BuildContext context, dynamic request) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final statusColor = _getStatusColor(request.status);
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Handle
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
 
-              // Title
-              Text(
-                request.title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+            // Status badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(20),
               ),
-              const SizedBox(height: 16),
+              child: Text(
+                request.status.toUpperCase().replaceAll('_', ' '),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
 
-              // Status
-              Row(
-                children: [
-                  _buildStatusBadge(request.status),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getUrgencyColor(request.urgency).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      request.urgency.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: _getUrgencyColor(request.urgency),
-                      ),
-                    ),
+            // Title
+            Text(
+              request.title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 16),
 
-              // Details
-              _buildDetailRow(Icons.category, 'Category', request.category),
-              _buildDetailRow(Icons.location_on, 'Location', request.location),
+            // Description
+            Text(
+              request.description,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 24),
+
+            // Details
+            _buildDetailRow(context, 'Category', request.category ?? 'N/A', Icons.category, isDark),
+            _buildDetailRow(context, 'Priority', request.priority.toUpperCase(), Icons.flag, isDark),
+            _buildDetailRow(
+              context,
+              'Requested',
+              DateFormat.yMMMd().format(DateTime.parse(request.createdAt)),
+              Icons.calendar_today,
+              isDark,
+            ),
+            if (request.scheduledDate != null)
               _buildDetailRow(
-                Icons.calendar_today,
-                'Requested',
-                Formatters.formatDate(request.requestedDate),
+                context,
+                'Scheduled',
+                DateFormat.yMMMd().format(DateTime.parse(request.scheduledDate)),
+                Icons.event,
+                isDark,
               ),
-              if (request.assignedTo != null)
-                _buildDetailRow(Icons.person, 'Assigned To', request.assignedTo!),
-              if (request.completedDate != null)
-                _buildDetailRow(
-                  Icons.check_circle,
-                  'Completed',
-                  Formatters.formatDate(request.completedDate!),
-                ),
-              const SizedBox(height: 24),
-
-              // Description
-              Text(
-                'Description',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+            if (request.completedDate != null)
+              _buildDetailRow(
+                context,
+                'Completed',
+                DateFormat.yMMMd().format(DateTime.parse(request.completedDate)),
+                Icons.check_circle,
+                isDark,
               ),
-              const SizedBox(height: 8),
-              Text(request.description),
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              // Actions
-              if (request.status == 'pending')
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _cancelRequest(request);
-                    },
-                    icon: const Icon(Icons.cancel),
-                    label: const Text('Cancel Request'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                  ),
-                ),
-            ],
-          ),
+            // Close button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(BuildContext context, String label, String value, IconData icon, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
+          Icon(icon, size: 20, color: AppTheme.primaryColor),
           const SizedBox(width: 12),
           Text(
-            '$label:',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontWeight: FontWeight.w500,
-            ),
+            '$label: ',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
           ),
         ],
       ),
     );
   }
-
-  void _cancelRequest(MaintenanceRequest request) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Request'),
-        content: const Text('Are you sure you want to cancel this maintenance request?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Cancel request via API
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Request cancelled')),
-              );
-            },
-            child: const Text('Yes', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Maintenance Request Model
-class MaintenanceRequest {
-  final int id;
-  final String title;
-  final String category;
-  final String urgency;
-  final String status;
-  final String location;
-  final String description;
-  final DateTime requestedDate;
-  final DateTime? completedDate;
-  final String? assignedTo;
-
-  MaintenanceRequest({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.urgency,
-    required this.status,
-    required this.location,
-    required this.description,
-    required this.requestedDate,
-    this.completedDate,
-    this.assignedTo,
-  });
 }

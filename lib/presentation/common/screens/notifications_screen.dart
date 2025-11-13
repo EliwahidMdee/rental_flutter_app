@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import '../widgets/loading_indicator.dart';
 import '../widgets/error_display.dart';
 import '../widgets/empty_state.dart';
+import '../providers/notification_provider.dart';
+import '../../../data/models/notification_model.dart';
 
 /// Notifications Screen
 /// 
@@ -15,9 +17,7 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Fetch notifications from provider
-    // For now, using mock data
-    final mockNotifications = _getMockNotifications();
+    final notificationsAsync = ref.watch(notificationsProvider(null));
     
     return Scaffold(
       appBar: AppBar(
@@ -26,78 +26,95 @@ class NotificationsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.done_all),
             tooltip: 'Mark all as read',
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('All notifications marked as read')),
-              );
+            onPressed: () async {
+              try {
+                final repository = ref.read(notificationRepositoryProvider);
+                await repository.markAllAsRead();
+                ref.invalidate(notificationsProvider(null));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All notifications marked as read')),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
+                }
+              }
             },
           ),
         ],
       ),
-      body: mockNotifications.isEmpty
-          ? EmptyState(
+      body: notificationsAsync.when(
+        data: (notifications) {
+          if (notifications.isEmpty) {
+            return const EmptyState(
               message: 'No notifications',
               subtitle: 'You\'re all caught up!',
               icon: Icons.notifications_none,
-            )
-          : ListView.builder(
-              itemCount: mockNotifications.length,
+            );
+          }
+          
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(notificationsProvider(null));
+            },
+            child: ListView.builder(
+              itemCount: notifications.length,
               itemBuilder: (context, index) {
-                final notification = mockNotifications[index];
-                return _buildNotificationTile(context, notification);
+                final notification = notifications[index];
+                return _buildNotificationTile(context, ref, notification);
               },
             ),
+          );
+        },
+        loading: () => const LoadingIndicator(message: 'Loading notifications...'),
+        error: (error, stack) => ErrorDisplay(
+          message: error.toString(),
+          onRetry: () {
+            ref.invalidate(notificationsProvider(null));
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildNotificationTile(BuildContext context, Map<String, dynamic> notification) {
-    final isRead = notification['read'] as bool;
-    final type = notification['type'] as String;
+  Widget _buildNotificationTile(BuildContext context, WidgetRef ref, NotificationModel notification) {
+    final isRead = notification.read;
+    final type = notification.type;
     
-    return Dismissible(
-      key: Key(notification['id'].toString()),
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      direction: DismissDirection.endToStart,
-      onDismissed: (direction) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Notification deleted')),
-        );
-      },
-      child: Container(
-        color: isRead ? null : Colors.blue.shade50,
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: _getNotificationColor(type).withOpacity(0.2),
-            child: Icon(
-              _getNotificationIcon(type),
-              color: _getNotificationColor(type),
-            ),
+    return Container(
+      color: isRead ? null : Colors.blue.shade50,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: _getNotificationColor(type).withOpacity(0.2),
+          child: Icon(
+            _getNotificationIcon(type),
+            color: _getNotificationColor(type),
           ),
-          title: Text(
-            notification['title'] as String,
-            style: TextStyle(
-              fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
-            ),
+        ),
+        title: Text(
+          notification.title,
+          style: TextStyle(
+            fontWeight: isRead ? FontWeight.normal : FontWeight.bold,
           ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(notification['body'] as String),
-              const SizedBox(height: 4),
-              Text(
-                _formatTime(notification['createdAt'] as String),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(notification.body),
+            const SizedBox(height: 4),
+            Text(
+              _formatTime(notification.createdAt),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
               ),
-            ],
+            ),
+          ],
           ),
           trailing: !isRead
               ? Container(
@@ -150,14 +167,14 @@ class NotificationsScreen extends ConsumerWidget {
                 Row(
                   children: [
                     Icon(
-                      _getNotificationIcon(notification['type'] as String),
-                      color: _getNotificationColor(notification['type'] as String),
+                      _getNotificationIcon(notification.type),
+                      color: _getNotificationColor(notification.type),
                       size: 32,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        notification['title'] as String,
+                        notification.title,
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -167,12 +184,12 @@ class NotificationsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _formatTime(notification['createdAt'] as String),
+                  _formatTime(notification.createdAt),
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  notification['body'] as String,
+                  notification.body,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 24),
@@ -247,40 +264,4 @@ class NotificationsScreen extends ConsumerWidget {
     }
   }
 
-  List<Map<String, dynamic>> _getMockNotifications() {
-    return [
-      {
-        'id': 1,
-        'title': 'Rent Payment Due',
-        'body': 'Your rent payment of \$1,200 is due on Dec 1, 2024',
-        'type': 'rent_due',
-        'read': false,
-        'createdAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-      },
-      {
-        'id': 2,
-        'title': 'Payment Approved',
-        'body': 'Your payment of \$1,200 for November has been approved',
-        'type': 'payment_received',
-        'read': false,
-        'createdAt': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-      },
-      {
-        'id': 3,
-        'title': 'Lease Expiring Soon',
-        'body': 'Your lease agreement will expire in 30 days',
-        'type': 'lease_expiring',
-        'read': true,
-        'createdAt': DateTime.now().subtract(const Duration(days: 2)).toIso8601String(),
-      },
-      {
-        'id': 4,
-        'title': 'New Message',
-        'body': 'You have a new message from your landlord',
-        'type': 'message',
-        'read': true,
-        'createdAt': DateTime.now().subtract(const Duration(days: 3)).toIso8601String(),
-      },
-    ];
-  }
 }

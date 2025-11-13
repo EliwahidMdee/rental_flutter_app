@@ -11,12 +11,18 @@ class LocalStorage {
   static const String _notificationsBox = 'notifications';
   static const String _dashboardBox = 'dashboard';
   static const String _settingsBox = 'settings';
+  static const String _leasesBox = 'leases';
+  static const String _maintenanceBox = 'maintenance';
+  static const String _tenantsBox = 'tenants';
   
   static Box? _propertiesCache;
   static Box? _paymentsCache;
   static Box? _notificationsCache;
   static Box? _dashboardCache;
   static Box? _settingsCache;
+  static Box? _leasesCache;
+  static Box? _maintenanceCache;
+  static Box? _tenantsCache;
   
   /// Initialize Hive and open boxes
   static Future<void> init() async {
@@ -26,6 +32,9 @@ class LocalStorage {
       _notificationsCache = await Hive.openBox(_notificationsBox);
       _dashboardCache = await Hive.openBox(_dashboardBox);
       _settingsCache = await Hive.openBox(_settingsBox);
+      _leasesCache = await Hive.openBox(_leasesBox);
+      _maintenanceCache = await Hive.openBox(_maintenanceBox);
+      _tenantsCache = await Hive.openBox(_tenantsBox);
     } catch (e) {
       throw Exception('Failed to initialize local storage: $e');
     }
@@ -71,6 +80,30 @@ class LocalStorage {
     return _settingsCache!;
   }
   
+  /// Get Leases Box
+  static Box get leasesBox {
+    if (_leasesCache == null || !_leasesCache!.isOpen) {
+      throw Exception('Leases box not initialized');
+    }
+    return _leasesCache!;
+  }
+  
+  /// Get Maintenance Box
+  static Box get maintenanceBox {
+    if (_maintenanceCache == null || !_maintenanceCache!.isOpen) {
+      throw Exception('Maintenance box not initialized');
+    }
+    return _maintenanceCache!;
+  }
+  
+  /// Get Tenants Box
+  static Box get tenantsBox {
+    if (_tenantsCache == null || !_tenantsCache!.isOpen) {
+      throw Exception('Tenants box not initialized');
+    }
+    return _tenantsCache!;
+  }
+  
   /// Save data to specific box
   static Future<void> save(String boxName, String key, dynamic value) async {
     final box = await Hive.openBox(boxName);
@@ -102,6 +135,9 @@ class LocalStorage {
       await _paymentsCache?.clear();
       await _notificationsCache?.clear();
       await _dashboardCache?.clear();
+      await _leasesCache?.clear();
+      await _maintenanceCache?.clear();
+      await _tenantsCache?.clear();
       // Don't clear settings as they should persist
     } catch (e) {
       throw Exception('Failed to clear cache: $e');
@@ -115,5 +151,8 @@ class LocalStorage {
     await _notificationsCache?.close();
     await _dashboardCache?.close();
     await _settingsCache?.close();
+    await _leasesCache?.close();
+    await _maintenanceCache?.close();
+    await _tenantsCache?.close();
   }
 }

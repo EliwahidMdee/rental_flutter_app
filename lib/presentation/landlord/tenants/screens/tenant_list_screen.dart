@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../common/widgets/loading_indicator.dart';
 import '../../../common/widgets/error_display.dart';
 import '../../../common/widgets/empty_state.dart';
+import '../../../common/providers/tenant_provider.dart';
+import '../../../../data/models/tenant_model.dart';
 
 /// Tenant List Screen
 /// 
@@ -14,9 +17,7 @@ class TenantListScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Fetch tenants from provider
-    // For now, using mock data
-    final mockTenants = _getMockTenants();
+    final tenantsAsync = ref.watch(landlordTenantsProvider);
     
     return Scaffold(
       appBar: AppBar(
@@ -32,29 +33,44 @@ class TenantListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: mockTenants.isEmpty
-          ? const EmptyState(
+      body: tenantsAsync.when(
+        data: (tenants) {
+          if (tenants.isEmpty) {
+            return const EmptyState(
               message: 'No tenants yet',
               subtitle: 'Tenants will appear here once properties are occupied',
               icon: Icons.people_outline,
-            )
-          : RefreshIndicator(
-              onRefresh: () async {
-                // Refresh tenants
+            );
+          }
+          
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(landlordTenantsProvider);
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: tenants.length,
+              itemBuilder: (context, index) {
+                final tenant = tenants[index];
+                return _buildTenantCard(context, tenant);
               },
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: mockTenants.length,
-                itemBuilder: (context, index) {
-                  final tenant = mockTenants[index];
-                  return _buildTenantCard(context, tenant);
-                },
-              ),
             ),
+          );
+        },
+        loading: () => const LoadingIndicator(message: 'Loading tenants...'),
+        error: (error, stack) => ErrorDisplay(
+          message: error.toString(),
+          onRetry: () {
+            ref.invalidate(landlordTenantsProvider);
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildTenantCard(BuildContext context, Map<String, dynamic> tenant) {
+  Widget _buildTenantCard(BuildContext context, TenantModel tenant) {
+    final status = tenant.currentLease?.status ?? 'inactive';
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -69,14 +85,17 @@ class TenantListScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 30,
                 backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                child: Text(
-                  tenant['name'].substring(0, 1).toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
+                backgroundImage: tenant.avatarUrl != null ? NetworkImage(tenant.avatarUrl!) : null,
+                child: tenant.avatarUrl == null
+                    ? Text(
+                        tenant.name.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 16),
               
@@ -86,31 +105,33 @@ class TenantListScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      tenant['name'],
+                      tenant.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                     ),
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.home, size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            tenant['property'],
-                            style: Theme.of(context).textTheme.bodySmall,
+                    if (tenant.currentLease != null) ...[
+                      Row(
+                        children: [
+                          Icon(Icons.home, size: 14, color: Colors.grey.shade600),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              tenant.currentLease!.propertyName,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                    ],
                     Row(
                       children: [
                         Icon(Icons.email, size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
-                          tenant['email'],
+                          tenant.email,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -123,15 +144,15 @@ class TenantListScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(tenant['status']).withOpacity(0.2),
+                  color: _getStatusColor(status).withOpacity(0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  tenant['status'],
+                  status.toUpperCase(),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: _getStatusColor(tenant['status']),
+                    color: _getStatusColor(status),
                   ),
                 ),
               ),
@@ -142,7 +163,9 @@ class TenantListScreen extends ConsumerWidget {
     );
   }
 
-  void _showTenantDetail(BuildContext context, Map<String, dynamic> tenant) {
+  void _showTenantDetail(BuildContext context, TenantModel tenant) {
+    final status = tenant.currentLease?.status ?? 'inactive';
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -177,14 +200,17 @@ class TenantListScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 40,
                       backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      child: Text(
-                        tenant['name'].substring(0, 1).toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                      backgroundImage: tenant.avatarUrl != null ? NetworkImage(tenant.avatarUrl!) : null,
+                      child: tenant.avatarUrl == null
+                          ? Text(
+                              tenant.name.substring(0, 1).toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            )
+                          : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -192,15 +218,15 @@ class TenantListScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            tenant['name'],
+                            tenant.name,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                           ),
                           Text(
-                            tenant['status'],
+                            status.toUpperCase(),
                             style: TextStyle(
-                              color: _getStatusColor(tenant['status']),
+                              color: _getStatusColor(status),
                             ),
                           ),
                         ],
@@ -210,11 +236,15 @@ class TenantListScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 const Divider(),
-                _buildDetailRow(context, Icons.home, 'Property', tenant['property']),
-                _buildDetailRow(context, Icons.email, 'Email', tenant['email']),
-                _buildDetailRow(context, Icons.phone, 'Phone', tenant['phone']),
-                _buildDetailRow(context, Icons.calendar_today, 'Move-in Date', tenant['moveInDate']),
-                _buildDetailRow(context, Icons.attach_money, 'Monthly Rent', tenant['rent']),
+                if (tenant.currentLease != null)
+                  _buildDetailRow(context, Icons.home, 'Property', tenant.currentLease!.propertyName),
+                _buildDetailRow(context, Icons.email, 'Email', tenant.email),
+                if (tenant.phone != null)
+                  _buildDetailRow(context, Icons.phone, 'Phone', tenant.phone!),
+                if (tenant.occupation != null)
+                  _buildDetailRow(context, Icons.work, 'Occupation', tenant.occupation!),
+                if (tenant.currentLease != null)
+                  _buildDetailRow(context, Icons.attach_money, 'Monthly Rent', '\$${tenant.currentLease!.monthlyRent.toStringAsFixed(2)}'),
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -291,35 +321,4 @@ class TenantListScreen extends ConsumerWidget {
     }
   }
 
-  List<Map<String, dynamic>> _getMockTenants() {
-    return [
-      {
-        'name': 'John Doe',
-        'property': 'Sunset Apartment #101',
-        'email': 'john.doe@example.com',
-        'phone': '+1 (555) 123-4567',
-        'status': 'Active',
-        'moveInDate': 'Jan 1, 2024',
-        'rent': '\$1,200',
-      },
-      {
-        'name': 'Jane Smith',
-        'property': 'Garden View #205',
-        'email': 'jane.smith@example.com',
-        'phone': '+1 (555) 234-5678',
-        'status': 'Active',
-        'moveInDate': 'Feb 15, 2024',
-        'rent': '\$1,500',
-      },
-      {
-        'name': 'Bob Johnson',
-        'property': 'City Plaza #302',
-        'email': 'bob.j@example.com',
-        'phone': '+1 (555) 345-6789',
-        'status': 'Active',
-        'moveInDate': 'Mar 10, 2024',
-        'rent': '\$900',
-      },
-    ];
-  }
 }

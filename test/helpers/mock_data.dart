@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rental_flutter_app/data/models/user_model.dart';
-import 'package:rental_flutter_app/data/models/property_model.dart';
-import 'package:rental_flutter_app/data/models/payment_model.dart';
+import 'package:rental_management_app/data/models/user_model.dart';
+import 'package:rental_management_app/data/models/property_model.dart';
+import 'package:rental_management_app/data/models/payment_model.dart';
 
 class MockData {
   // Mock Users

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../common/providers/payment_provider.dart';
-import '../../../common/widgets/payment_card.dart';
-import '../../../common/widgets/loading_indicator.dart';
-import '../../../common/widgets/error_display.dart';
-import '../../../common/widgets/empty_state.dart';
+import '../../common/providers/payment_provider.dart';
+import '../../common/widgets/payment_card.dart';
+import '../../common/widgets/loading_indicator.dart';
+import '../../common/widgets/error_display.dart';
+import '../../common/widgets/empty_state.dart';
 
 /// Payment Approval Screen (Admin/Landlord)
 /// 

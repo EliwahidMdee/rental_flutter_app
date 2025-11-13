@@ -9,17 +9,14 @@ class AppConfig {
   
   /// Current environment
   /// Options: 'development', 'staging', 'production'
-  static const String environment = String.fromEnvironment(
-    'ENVIRONMENT',
-    defaultValue: 'production',
-  );
-  
+  static const String environment = 'development';
+
   /// API Base URL based on environment
   static String get apiBaseUrl {
     switch (environment) {
       case 'development':
         // Use 10.0.2.2 for Android emulator, localhost for iOS simulator
-        return 'http://10.0.2.2:8000/api';
+        return 'https://mirha.swapdez.app/api';
       case 'staging':
         return 'https://staging-api.yourdomain.com/api';
       case 'production':

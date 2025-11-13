@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../data/models/payment_model.dart';
+import '../../../../data/models/payment_model.dart';
 import '../../../common/providers/payment_provider.dart';
 import '../../../common/widgets/custom_button.dart';
 import '../../../common/widgets/custom_text_field.dart';
-import '../../../core/utils/validators.dart';
+import '../../../../core/utils/validators.dart';
 
 /// Make Payment Screen
 /// 

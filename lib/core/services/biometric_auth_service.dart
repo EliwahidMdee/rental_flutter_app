@@ -2,9 +2,8 @@ import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 
 /// Biometric Auth Service
-/// 
+///
 /// Handles fingerprint and face ID authentication
-
 class BiometricAuthService {
   static final LocalAuthentication _localAuth = LocalAuthentication();
 
@@ -38,8 +37,6 @@ class BiometricAuthService {
   /// Authenticate with biometrics
   static Future<bool> authenticate({
     String reason = 'Please authenticate to continue',
-    bool useErrorDialogs = true,
-    bool stickyAuth = true,
   }) async {
     try {
       // Check if biometric is available
@@ -51,11 +48,7 @@ class BiometricAuthService {
       // Attempt authentication
       return await _localAuth.authenticate(
         localizedReason: reason,
-        options: AuthenticationOptions(
-          useErrorDialogs: useErrorDialogs,
-          stickyAuth: stickyAuth,
-          biometricOnly: true,
-        ),
+        biometricOnly: true,
       );
     } on PlatformException catch (e) {
       print('Biometric authentication error: ${e.message}');

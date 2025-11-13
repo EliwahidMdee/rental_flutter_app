@@ -1,8 +1,12 @@
+import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../config/app_config.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../../core/storage/local_storage.dart';
 
 /// Splash Screen
 /// 
@@ -16,90 +20,84 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
+  late VideoPlayerController _videoController;
+  ChewieController? _chewieController;
+  bool _videoPlayedOrFailed = false;
+  bool _videoError = false;
+
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    _videoController = VideoPlayerController.asset('assets/images/loading.mp4')
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() {
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController,
+            autoPlay: true,
+            looping: false,
+            showControls: false,
+            allowMuting: false,
+            allowPlaybackSpeedChanging: false,
+            allowFullScreen: false,
+            aspectRatio: _videoController.value.aspectRatio > 0 ? _videoController.value.aspectRatio : 1.0,
+          );
+        });
+        _videoController.addListener(_onVideoEnd);
+      }).catchError((e) {
+        setState(() {
+          _videoError = true;
+        });
+        _proceedAfterVideo();
+      });
+    _videoController.setVolume(0.0);
   }
 
-  Future<void> _checkAuthStatus() async {
-    // Give splash screen a minimum display time
-    await Future.delayed(const Duration(seconds: 2));
-    
-    // Check auth status will trigger navigation via router redirect
-    if (mounted) {
-      await ref.read(authStateProvider.notifier).checkAuthStatus();
+  void _onVideoEnd() {
+    if (_videoController.value.hasError && !_videoPlayedOrFailed) {
+      setState(() {
+        _videoError = true;
+      });
+      _proceedAfterVideo();
+      return;
     }
+    if (_videoController.value.position >= _videoController.value.duration && !_videoPlayedOrFailed) {
+      _proceedAfterVideo();
+    }
+  }
+
+  void _proceedAfterVideo() {
+    if (_videoPlayedOrFailed) return;
+    _videoPlayedOrFailed = true;
+    LocalStorage.save('settings', 'splashShown', true);
+    _goToLogin();
+  }
+
+  void _goToLogin() {
+    if (mounted) {
+      // Use GoRouter to navigate to login page
+      context.go('/login');
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController.removeListener(_onVideoEnd);
+    _videoController.dispose();
+    _chewieController?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // App Icon
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  Icons.home_work,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // App Name
-              Text(
-                AppConfig.appName,
-                style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              // App Version
-              Text(
-                'v${AppConfig.appVersion}',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withOpacity(0.8),
-                ),
-              ),
-              const SizedBox(height: 48),
-              
-              // Loading Indicator
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ],
-          ),
-        ),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: _videoError
+            ? Image.asset('assets/images/icon.png', width: 120, height: 120)
+            : (_chewieController != null && _chewieController!.videoPlayerController.value.isInitialized
+                ? Chewie(controller: _chewieController!)
+                : Image.asset('assets/images/icon.png', width: 120, height: 120)),
       ),
     );
   }

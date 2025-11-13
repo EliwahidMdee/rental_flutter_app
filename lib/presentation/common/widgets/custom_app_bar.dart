@@ -53,7 +53,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// App Bar with search functionality
 class SearchAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
-  final String hint Text;
+  final String hintText;
   final Function(String) onSearch;
   final VoidCallback? onClear;
 

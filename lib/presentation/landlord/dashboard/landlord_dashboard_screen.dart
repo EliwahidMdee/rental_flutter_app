@@ -13,10 +13,12 @@ class LandlordDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Landlord Dashboard'),
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.message_outlined),
@@ -37,21 +39,42 @@ class LandlordDashboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Card
-            Card(
+            // Welcome Card with Gradient
+            Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.getVibrantGradient('landlord'),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.landlordAccent.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: AppTheme.landlordAccent,
-                      child: Text(
-                        user?.name[0].toUpperCase() ?? 'L',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withOpacity(0.25),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.5),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          user?.name[0].toUpperCase() ?? 'L',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
@@ -60,9 +83,31 @@ class LandlordDashboardScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Welcome back,', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                          const Text(
+                            'Welcome back,',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                           const SizedBox(height: 4),
-                          Text(user?.name ?? 'Landlord', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text(
+                            user?.name ?? 'Landlord',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Property Manager',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -70,10 +115,13 @@ class LandlordDashboardScreen extends ConsumerWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
-            // Stats
-            const Text('My Properties', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            // My Properties Stats
+            Text(
+              'My Properties',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 16),
             GridView.count(
               crossAxisCount: 2,
@@ -82,45 +130,84 @@ class LandlordDashboardScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                _buildStatCard(context, 'Properties', '12', Icons.apartment, AppTheme.landlordAccent),
-                _buildStatCard(context, 'Tenants', '45', Icons.people, Colors.blue),
-                _buildStatCard(context, 'Occupancy', '92%', Icons.home, Colors.green),
-                _buildStatCard(context, 'Revenue', '\$18,500', Icons.attach_money, Colors.purple),
+                _buildStatCard(context, 'Properties', '12', Icons.apartment_outlined, Colors.blue, isDark),
+                _buildStatCard(context, 'Tenants', '45', Icons.people_outline, AppTheme.landlordAccent, isDark),
+                _buildStatCard(context, 'Occupancy', '92%', Icons.home_outlined, AppTheme.accentOrange, isDark),
+                _buildStatCard(context, 'Revenue', '\$18.5K', Icons.attach_money, Colors.purple, isDark),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
 
             // Quick Actions
-            const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Quick Actions',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 16),
-            _buildActionButton(context, 'View Properties', Icons.apartment, () => context.push('/landlord/properties')),
-            const SizedBox(height: 12),
-            _buildActionButton(context, 'Manage Tenants', Icons.people_outline, () => context.push('/landlord/tenants')),
-            const SizedBox(height: 12),
-            _buildActionButton(context, 'View Payments', Icons.payment, () => context.push('/landlord/payments')),
-            const SizedBox(height: 24),
-
-            // Logout
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await ref.read(authStateProvider.notifier).logout();
-                  if (context.mounted) context.go('/login');
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
+            // New circular quick actions (2 in a row horizontally)
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildCircularQuickAction(
+                    context,
+                    'Properties',
+                    Icons.apartment_outlined,
+                    () => context.push('/landlord/properties'),
+                    Colors.blue,
+                    isDark,
+                  ),
+                  const SizedBox(width: 24),
+                  _buildCircularQuickAction(
+                    context,
+                    'Tenants',
+                    Icons.people_outline,
+                    () => context.push('/landlord/tenants'),
+                    AppTheme.landlordAccent,
+                    isDark,
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 24),
+            // Logout removed from dashboard (moved to profile/settings)
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, IconData icon, Color color) {
-    return Card(
+  Widget _buildStatCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    bool isDark,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(isDark ? 0.2 : 0.08),
+            color.withOpacity(isDark ? 0.1 : 0.04),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: color.withOpacity(isDark ? 0.3 : 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -130,30 +217,70 @@ class LandlordDashboardScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, color: color, size: 32),
                 Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                  child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(isDark ? 0.3 : 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 28,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButton(BuildContext context, String label, IconData icon, VoidCallback onPressed) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+  Widget _buildCircularQuickAction(
+    BuildContext context,
+    String label,
+    IconData icon,
+    VoidCallback onPressed,
+    Color color,
+    bool isDark,
+  ) {
+    final textColor = Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black87;
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircleAvatar(
+            radius: 34,
+            backgroundColor: color,
+            child: Icon(icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+        ],
       ),
     );
   }

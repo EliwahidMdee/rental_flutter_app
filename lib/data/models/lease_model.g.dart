@@ -7,10 +7,10 @@ part of 'lease_model.dart';
 // **************************************************************************
 
 LeaseModel _$LeaseModelFromJson(Map<String, dynamic> json) => LeaseModel(
-      id: json['id'] as int,
-      propertyId: json['property_id'] as int,
-      tenantId: json['tenant_id'] as int,
-      landlordId: json['landlord_id'] as int,
+      id: (json['id'] as num).toInt(),
+      propertyId: (json['property_id'] as num).toInt(),
+      tenantId: (json['tenant_id'] as num).toInt(),
+      landlordId: (json['landlord_id'] as num).toInt(),
       startDate: json['start_date'] as String,
       endDate: json['end_date'] as String,
       monthlyRent: (json['monthly_rent'] as num).toDouble(),
@@ -51,7 +51,7 @@ Map<String, dynamic> _$LeaseModelToJson(LeaseModel instance) =>
 
 PropertySummary _$PropertySummaryFromJson(Map<String, dynamic> json) =>
     PropertySummary(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       address: json['address'] as String?,
     );
@@ -65,7 +65,7 @@ Map<String, dynamic> _$PropertySummaryToJson(PropertySummary instance) =>
 
 TenantSummary _$TenantSummaryFromJson(Map<String, dynamic> json) =>
     TenantSummary(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       email: json['email'] as String?,
     );

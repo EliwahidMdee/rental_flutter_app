@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rental_flutter_app/presentation/common/widgets/custom_button.dart';
+import 'package:rental_management_app/presentation/common/widgets/custom_button.dart';
 
 void main() {
   group('CustomButton', () {

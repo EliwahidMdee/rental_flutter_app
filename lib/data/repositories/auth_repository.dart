@@ -21,6 +21,7 @@ class AuthRepository {
     required String email,
     required String password,
   }) async {
+    print('AuthRepository: login called with email: ' + email);
     final response = await _apiClient.post(
       ApiEndpoints.login,
       data: {
@@ -29,7 +30,7 @@ class AuthRepository {
         'device_name': 'mobile',
       },
     );
-    
+    print('AuthRepository: login API response: ' + response.data.toString());
     final data = response.data['data'] ?? response.data;
     final token = data['token'] as String;
     final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);

@@ -12,18 +12,26 @@ class NetworkInfo {
   /// Check if device is connected to the internet
   Future<bool> get isConnected async {
     final result = await _connectivity.checkConnectivity();
-    return !result.contains(ConnectivityResult.none);
+    // `checkConnectivity()` may return either a ConnectivityResult or a List<ConnectivityResult>
+    if (result is List) {
+      return result.every((r) => r == ConnectivityResult.none) == false;
+    }
+    return (result as ConnectivityResult) != ConnectivityResult.none;
   }
   
   /// Stream of connectivity changes
   Stream<bool> get onConnectivityChanged {
-    return _connectivity.onConnectivityChanged.map(
-      (results) => !results.contains(ConnectivityResult.none),
-    );
+    return _connectivity.onConnectivityChanged.map((result) {
+      if (result is List) {
+        return result.every((r) => r == ConnectivityResult.none) == false;
+      }
+      return (result as ConnectivityResult) != ConnectivityResult.none;
+    });
   }
   
   /// Get current connectivity type
-  Future<List<ConnectivityResult>> get connectivityType {
-    return _connectivity.checkConnectivity();
+  Future<dynamic> get connectivityType async {
+    // Return whatever the underlying API provides (ConnectivityResult or List<ConnectivityResult>)
+    return await _connectivity.checkConnectivity();
   }
 }

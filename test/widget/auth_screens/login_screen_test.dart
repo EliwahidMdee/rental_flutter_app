@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rental_flutter_app/presentation/auth/screens/login_screen.dart';
+import 'package:rental_management_app/presentation/auth/screens/login_screen.dart';
 
 void main() {
   group('LoginScreen', () {

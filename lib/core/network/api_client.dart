@@ -118,14 +118,19 @@ class ApiClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) async {
+    print('ApiClient: POST $path');
+    print('ApiClient: POST data: ' + (data?.toString() ?? 'null'));
     try {
-      return await _dio.post<T>(
+      final resp = await _dio.post<T>(
         path,
         data: data,
         queryParameters: queryParameters,
         options: options,
       );
+      print('ApiClient: POST response: ' + resp.data.toString());
+      return resp;
     } on DioException catch (e) {
+      print('ApiClient: POST error: ' + e.toString());
       throw _handleError(e);
     }
   }

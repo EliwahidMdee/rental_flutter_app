@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/utils/validators.dart';
-import '../../../config/theme.dart';
 import '../providers/auth_provider.dart';
 import '../../common/widgets/custom_button.dart';
 import '../../common/widgets/custom_text_field.dart';
@@ -53,19 +52,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     if (!mounted) return;
 
-    result.when(
-      success: (_) {
-        // Navigation handled by router
-      },
-      failure: (message) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-          ),
-        );
-      },
-    );
+    if (result is AuthSuccess) {
+      // Navigation handled by router redirect
+    } else if (result is AuthFailure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -145,7 +141,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   
                   // Role Selection
                   DropdownButtonFormField<String>(
-                    value: _selectedRole,
+                    initialValue: _selectedRole,
                     decoration: InputDecoration(
                       labelText: 'Register as',
                       prefixIcon: const Icon(Icons.badge_outlined),

@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:state_notifier/state_notifier.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../core/network/api_client.dart';
@@ -67,35 +67,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   /// Check authentication status on app start
   Future<void> checkAuthStatus() async {
+    print('AuthNotifier: Checking auth status');
     state = state.copyWith(status: AuthStatus.loading);
-
     try {
       final isLoggedIn = await _authRepository.isLoggedIn();
-      
-      if (isLoggedIn) {
-        try {
-          // Try to get current user from API
-          final user = await _authRepository.getCurrentUser();
-          state = state.copyWith(
-            status: AuthStatus.authenticated,
-            user: user,
-          );
-        } catch (e) {
-          // Fallback to cached user
-          final cachedUser = await _authRepository.getCachedUser();
-          if (cachedUser != null) {
-            state = state.copyWith(
-              status: AuthStatus.authenticated,
-              user: cachedUser,
-            );
-          } else {
-            state = state.copyWith(status: AuthStatus.unauthenticated);
-          }
+      print('AuthNotifier: isLoggedIn = $isLoggedIn');
+      if (!isLoggedIn) {
+        print('AuthNotifier: not logged in');
+        state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
+        return;
+      }
+
+      // If token exists, try to restore a cached user immediately so the app
+      // doesn't force the user to login every time (temporary session).
+      final cached = await _authRepository.getCachedUser();
+      if (cached != null) {
+        state = state.copyWith(status: AuthStatus.authenticated, user: cached);
+      }
+
+      // Attempt to refresh user data from API. If it fails, keep the cached user.
+      try {
+        final fresh = await _authRepository.getCurrentUser();
+        print('AuthNotifier: refreshed user: ' + fresh.toString());
+        state = state.copyWith(status: AuthStatus.authenticated, user: fresh);
+      } catch (e) {
+        print('AuthNotifier: failed to refresh user, keeping cached: $e');
+        // If we had no cached user and refresh failed, mark unauthenticated
+        if (cached == null) {
+          state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
         }
-      } else {
-        state = state.copyWith(status: AuthStatus.unauthenticated);
       }
     } catch (e) {
+      print('AuthNotifier: error ' + e.toString());
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
         errorMessage: e.toString(),
@@ -218,7 +221,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 }
 
-/// Auth State Provider
+/// Proper StateNotifierProvider: exposes both the notifier (via .notifier) and the state.
 final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   return AuthNotifier(authRepository);

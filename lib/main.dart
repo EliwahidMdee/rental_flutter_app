@@ -5,6 +5,7 @@ import 'config/app_config.dart';
 import 'config/theme.dart';
 import 'config/routes.dart';
 import 'core/storage/local_storage.dart';
+import 'presentation/auth/providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,35 +26,37 @@ void main() async {
   );
 }
 
-class RentalManagementApp extends ConsumerWidget {
+class RentalManagementApp extends ConsumerStatefulWidget {
   const RentalManagementApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RentalManagementApp> createState() => _RentalManagementAppState();
+}
+
+class _RentalManagementAppState extends ConsumerState<RentalManagementApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Trigger auth status check once on startup so any persisted session is restored
+    Future.microtask(() => ref.read(authStateProvider.notifier).checkAuthStatus());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
-      
+
       // Theming
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      
+
       // Routing
       routerConfig: router,
-      
-      // Localization (if needed)
-      // localizationsDelegates: const [
-      //   GlobalMaterialLocalizations.delegate,
-      //   GlobalWidgetsLocalizations.delegate,
-      //   GlobalCupertinoLocalizations.delegate,
-      // ],
-      // supportedLocales: const [
-      //   Locale('en', 'US'),
-      // ],
     );
   }
 }

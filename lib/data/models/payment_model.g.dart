@@ -6,12 +6,11 @@ part of 'payment_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-PaymentModel _$PaymentModelFromJson(Map<String, dynamic> json) =>
-    PaymentModel(
-      id: json['id'] as int,
-      tenantId: json['tenant_id'] as int,
-      propertyId: json['property_id'] as int?,
-      leaseId: json['lease_id'] as int?,
+PaymentModel _$PaymentModelFromJson(Map<String, dynamic> json) => PaymentModel(
+      id: (json['id'] as num).toInt(),
+      tenantId: (json['tenant_id'] as num).toInt(),
+      propertyId: (json['property_id'] as num?)?.toInt(),
+      leaseId: (json['lease_id'] as num?)?.toInt(),
       amount: (json['amount'] as num).toDouble(),
       currency: json['currency'] as String? ?? 'USD',
       paymentDate: json['payment_date'] as String,
@@ -50,7 +49,7 @@ Map<String, dynamic> _$PaymentModelToJson(PaymentModel instance) =>
 
 TenantSummary _$TenantSummaryFromJson(Map<String, dynamic> json) =>
     TenantSummary(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       email: json['email'] as String?,
     );
@@ -64,7 +63,7 @@ Map<String, dynamic> _$TenantSummaryToJson(TenantSummary instance) =>
 
 PropertySummary _$PropertySummaryFromJson(Map<String, dynamic> json) =>
     PropertySummary(
-      id: json['id'] as int,
+      id: (json['id'] as num).toInt(),
       name: json['name'] as String,
       address: json['address'] as String?,
     );

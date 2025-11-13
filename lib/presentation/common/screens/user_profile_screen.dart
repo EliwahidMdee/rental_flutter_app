@@ -34,7 +34,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   }
 
   void _loadUserData() {
-    final user = ref.read(authStateProvider).value;
+    final user = ref.read(authStateProvider).user;
     if (user != null) {
       _nameController.text = user.name;
       _emailController.text = user.email;
@@ -54,7 +54,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
-    final user = authState.value;
+    final user = authState.user;
 
     return Scaffold(
       appBar: AppBar(
@@ -114,7 +114,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      user.role.toUpperCase(),
+                      (user.primaryRole ?? 'User').toUpperCase(),
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
                             color: Colors.grey.shade600,
                           ),

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../config/theme.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../common/providers/lease_provider.dart';
+import '../../common/providers/payment_provider.dart';
+import '../../common/widgets/loading_indicator.dart';
+import '../../common/widgets/error_display.dart';
 
 /// Tenant Dashboard Screen
 class TenantDashboardScreen extends ConsumerWidget {
@@ -14,6 +19,14 @@ class TenantDashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Fetch current lease
+    final currentLeaseAsync = ref.watch(currentUserLeaseProvider);
+    
+    // Fetch recent payments
+    final paymentsAsync = ref.watch(paymentsProvider(
+      PaymentFilters(tenantId: user?.id, status: 'paid'),
+    ));
 
     return Scaffold(
       appBar: AppBar(
@@ -118,7 +131,139 @@ class TenantDashboardScreen extends ConsumerWidget {
             const SizedBox(height: 28),
 
             // Rent Status Card
-            Container(
+            currentLeaseAsync.when(
+              data: (lease) => _buildRentStatusCard(context, lease, isDark),
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (error, stack) => ErrorDisplay(message: error.toString()),
+            ),
+            const SizedBox(height: 28),
+
+            // Quick Actions
+            Text(
+              'Quick Actions',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildCircularQuickAction(
+                    context,
+                    'Payment',
+                    Icons.payment,
+                    () => context.push('/tenant/history'),
+                    Colors.blue,
+                    isDark,
+                  ),
+                  const SizedBox(width: 24),
+                  _buildCircularQuickAction(
+                    context,
+                    'Lease',
+                    Icons.description_outlined,
+                    () => context.push('/tenant/lease'),
+                    AppTheme.landlordAccent,
+                    isDark,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Recent Payments Section
+            Text(
+              'Recent Payments',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            paymentsAsync.when(
+              data: (payments) {
+                if (payments.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: Text('No payment history available'),
+                    ),
+                  );
+                }
+                return Column(
+                  children: payments.take(3).map((payment) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildPaymentTile(
+                        context,
+                        DateFormat.yMMM().format(DateTime.parse(payment.paymentDate)),
+                        payment.formattedAmount,
+                        payment.status.toUpperCase(),
+                        _getStatusColor(payment.status),
+                        isDark,
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (error, stack) => ErrorDisplay(message: error.toString()),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRentStatusCard(BuildContext context, dynamic lease, bool isDark) {
+    if (lease == null) {
+      return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.grey.withOpacity(isDark ? 0.2 : 0.1),
+                    Colors.grey.withOpacity(isDark ? 0.15 : 0.08),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(isDark ? 0.3 : 0.2),
+                  width: 1.5,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'No Active Lease',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.info_outline, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'You do not have an active lease at this time.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            );
+    }
+    
+    return Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: LinearGradient(
@@ -161,11 +306,11 @@ class TenantDashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Current Month:',
+                          'Monthly Rent:',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          '\$1,200',
+                          '\$${lease.monthlyRent.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -179,11 +324,25 @@ class TenantDashboardScreen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Due Date:',
+                          'Property:',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                         Text(
-                          'Dec 1, 2024',
+                          lease.property?.name ?? 'N/A',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Lease End:',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                        ),
+                        Text(
+                          DateFormat.yMMMd().format(DateTime.parse(lease.endDate)),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -196,128 +355,29 @@ class TenantDashboardScreen extends ConsumerWidget {
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: const Text('Pay Now'),
+                        child: const Text('Pay Rent'),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(height: 28),
-
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 16),
-
-            // NEW: Two circular quick actions arranged horizontally with label below
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildCircularQuickAction(
-                    context,
-                    'Payment',
-                    Icons.payment,
-                    () => context.push('/tenant/history'),
-                    Colors.blue,
-                    isDark,
-                  ),
-                  const SizedBox(width: 24),
-                  _buildCircularQuickAction(
-                    context,
-                    'Lease',
-                    Icons.description_outlined,
-                    () => context.push('/tenant/lease'),
-                    AppTheme.landlordAccent,
-                    isDark,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Recent Payments
-            Text(
-              'Recent Payments',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 16),
-            _buildPaymentTile(context, 'Nov 2024', '\$1,200', 'Paid', Colors.green, isDark),
-            const SizedBox(height: 12),
-            _buildPaymentTile(context, 'Oct 2024', '\$1,200', 'Paid', Colors.green, isDark),
-            const SizedBox(height: 12),
-            _buildPaymentTile(context, 'Sep 2024', '\$1,200', 'Paid', Colors.green, isDark),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
+            );
   }
 
-  Widget _buildQuickAction(
-    BuildContext context,
-    String label,
-    IconData icon,
-    VoidCallback onPressed,
-    Color color,
-    bool isDark,
-  ) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [
-              color.withOpacity(isDark ? 0.2 : 0.08),
-              color.withOpacity(isDark ? 0.1 : 0.04),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(
-            color: color.withOpacity(isDark ? 0.3 : 0.2),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(isDark ? 0.3 : 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 32,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
+
+
 
   Widget _buildCircularQuickAction(
     BuildContext context,
